@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f172a">
+  <title>Duty Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      color: #0f172a;
+      padding-bottom: 80px;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: white;
+      border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around;
+      padding: 10px 0 22px; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); z-index: 100;
+    }
+    .nav-btn {
+      background: none; border: none; cursor: pointer; display: flex;
+      flex-direction: column; align-items: center; gap: 4px;
+      padding: 6px 24px; border-radius: 14px;
+    }
+    .nav-btn.active { background: #f1f5f9; }
+    .nav-btn .nav-icon { font-size: 22px; }
+    .nav-btn .nav-lbl { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .nav-btn.active .nav-lbl { color: #0f172a; font-weight: 700; }
+
+    .accent-amber  { border-left: 4px solid #f59e0b; }
+    .accent-indigo { border-left: 4px solid #6366f1; }
+    .accent-sky    { border-left: 4px solid #0ea5e9; }
+
+    .tbl-head { display: grid; padding: 6px 0; border-bottom: 2px solid #f1f5f9; margin-bottom: 2px; }
+    .tbl-head span { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+    .tbl-row  { display: grid; padding: 11px 0; border-bottom: 1px solid #f8fafc; align-items: center; }
+    .tbl-row:last-child { border-bottom: none; }
+    .tbl-total { display: grid; padding: 10px 0 2px; border-top: 2px solid #e0e7ff; margin-top: 4px; align-items: center; }
+    .ta-right { text-align: right; }
+
+    .approved-badge { font-size: 11px; color: #15803d; font-weight: 600; margin-top: 2px; }
+    .tab-empty { text-align: center; padding: 28px 0; color: #94a3b8; font-size: 14px; font-weight: 500; }
+    .tab-loading { text-align: center; padding: 32px 0; color: #94a3b8; font-size: 14px; }
+
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white; padding: 28px 20px 22px; text-align: center;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header .driver-name { font-size: 14px; color: #94a3b8; margin-top: 4px; }
+
+    .clock-card {
+      background: white; margin: 16px 16px 12px; border-radius: 20px;
+      padding: 22px 20px 18px; text-align: center; box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    }
+    .clock-card .date-str { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+    .clock-card .time-str {
+      font-size: 52px; font-weight: 800; color: #0f172a;
+      letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .status-pill {
+      display: inline-block; padding: 5px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; margin-top: 12px;
+    }
+    .status-pill.off  { background: #f1f5f9; color: #64748b; }
+    .status-pill.on   { background: #dcfce7; color: #15803d; }
+    .status-pill.done { background: #dbeafe; color: #1d4ed8; }
+
+    .btn-wrap { margin: 0 16px 14px; }
+    .punch-btn {
+      width: 100%; padding: 22px 20px; border: none; border-radius: 20px;
+      cursor: pointer; transition: transform 0.1s ease; text-align: center;
+    }
+    .punch-btn:active { transform: scale(0.97); }
+    .punch-btn .icon  { font-size: 30px; display: block; margin-bottom: 6px; }
+    .punch-btn .label { font-size: 22px; font-weight: 800; display: block; color: white; }
+    .punch-btn .sub   { font-size: 13px; color: rgba(255,255,255,0.8); display: block; margin-top: 3px; font-weight: 400; }
+    .btn-start { background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 24px rgba(22,163,74,0.35); }
+    .btn-end   { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 6px 24px rgba(220,38,38,0.35); }
+
+    .info-card {
+      background: white; margin: 0 16px 14px; border-radius: 20px;
+      padding: 18px 20px; box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    }
+    .info-card .card-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+      color: #94a3b8; font-weight: 700; margin-bottom: 14px;
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid #f8fafc;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .lbl  { font-size: 15px; color: #475569; }
+    .info-row .val  { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .info-row .val.green  { color: #15803d; }
+    .info-row .val.orange { color: #ea580c; }
+    .info-row .val.muted  { color: #94a3b8; font-weight: 500; }
+
+    .editable-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid #f8fafc;
+    }
+    .editable-row .lbl { font-size: 15px; color: #475569; flex-shrink: 0; }
+    .editable-row .val { font-size: 15px; font-weight: 700; color: #0f172a; flex: 1; padding: 0 10px; }
+    .edit-btn {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 5px 10px; font-size: 12px; color: #475569; cursor: pointer;
+      font-weight: 600; white-space: nowrap; flex-shrink: 0;
+    }
+    .edit-btn:active { background: #e2e8f0; }
+    .edit-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .card-on   { border-left: 4px solid #22c55e; }
+    .card-done { border-left: 4px solid #3b82f6; }
+
+    .overnight-note {
+      font-size: 12px; color: #b45309; background: #fffbeb;
+      border: 1px solid #fde68a; border-radius: 8px;
+      padding: 7px 10px; margin-top: 12px; font-weight: 600;
+    }
+
+    /* Monthly earnings */
+    .card-earnings {
+      border-left: 4px solid #d97706;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    }
+    .card-earnings .card-title { color: #92400e; }
+    .earnings-card-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+    }
+    .earnings-card-header .card-title { margin-bottom: 0; }
+    .refresh-btn {
+      background: #fde68a; border: none; border-radius: 8px;
+      padding: 5px 11px; font-size: 12px; color: #92400e;
+      cursor: pointer; font-weight: 700;
+    }
+    .refresh-btn:active { background: #fcd34d; }
+    .info-row.total-row {
+      border-top: 2px solid #fde68a; margin-top: 6px; padding-top: 14px; border-bottom: none;
+    }
+    .val.big-total { color: #15803d; font-size: 22px; font-weight: 800; }
+
+    .earnings-center { text-align: center; padding: 18px 0 10px; }
+    .earnings-center .ec-icon  { font-size: 36px; display: block; margin-bottom: 10px; }
+    .earnings-center .ec-title { font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 6px; }
+    .earnings-center .ec-sub   { font-size: 13px; color: #a16207; line-height: 1.5; }
+    .retry-btn {
+      margin-top: 14px; padding: 9px 24px; background: #0f172a; color: white;
+      border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+      display: inline-block;
+    }
+    .retry-btn:active { background: #1e293b; }
+
+    .sync-line {
+      text-align: center; font-size: 12px; padding: 0 16px 20px; min-height: 30px;
+    }
+    .sync-line.syncing { color: #2563eb; }
+    .sync-line.synced  { color: #15803d; }
+    .sync-line.fail    { color: #dc2626; }
+
+    /* ── Forgotten punch-out warning ─────────────────────────── */
+    .warn-card {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      margin: 0 16px 14px; border-radius: 20px;
+      padding: 20px 20px 22px; box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid #f59e0b;
+    }
+    .warn-icon  { font-size: 36px; display: block; text-align: center; margin-bottom: 12px; }
+    .warn-title { font-size: 17px; font-weight: 800; color: #92400e; text-align: center; margin-bottom: 6px; }
+    .warn-sub   { font-size: 13px; color: #a16207; text-align: center; line-height: 1.5; margin-bottom: 18px; }
+    .warn-detail {
+      background: white; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px;
+      border: 1px solid #fde68a;
+    }
+    .warn-detail-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #fef9c3; }
+    .warn-detail-row:last-child { border-bottom: none; }
+    .warn-detail-row .lbl { font-size: 14px; color: #78350f; }
+    .warn-detail-row .val { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .time-picker-section {
+      background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+      border: 1px solid #fde68a;
+    }
+    .time-picker-label { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 10px; display: block; }
+    input[type="time"] {
+      width: 100%; padding: 12px 14px; border: 2px solid #fde68a; border-radius: 12px;
+      font-size: 22px; font-weight: 800; color: #0f172a; background: #fffbeb;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      text-align: center; outline: none; box-sizing: border-box;
+    }
+    input[type="time"]:focus { border-color: #f59e0b; }
+    .btn-log {
+      width: 100%; padding: 15px 20px; border: none; border-radius: 14px;
+      background: #0f172a; color: white; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: transform 0.1s ease;
+    }
+    .btn-log:active { transform: scale(0.97); }
+
+    /* ── Forgotten punch-out confirmation ────────────────────── */
+    .confirm-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      margin: 0 16px 14px; border-radius: 20px;
+      padding: 20px 20px 22px; box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid #22c55e;
+    }
+    .confirm-icon  { font-size: 36px; display: block; text-align: center; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 800; color: #14532d; text-align: center; margin-bottom: 6px; }
+    .confirm-sub   { font-size: 13px; color: #166534; text-align: center; line-height: 1.5; margin-bottom: 18px; }
+    .confirm-detail {
+      background: white; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px;
+      border: 1px solid #bbf7d0;
+    }
+    .confirm-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0fdf4; }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-row .lbl { font-size: 14px; color: #166534; }
+    .confirm-row .val { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .btn-start-today {
+      width: 100%; padding: 16px 20px; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      box-shadow: 0 4px 16px rgba(22,163,74,0.3);
+      color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .btn-start-today:active { transform: scale(0.97); }
+
+    .status-pill.warn { background: #fef3c7; color: #92400e; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🚗 Duty Tracker</h1>
+  <div class="driver-name" id="driverLabel"></div>
+</div>
+
+<div class="page active" id="page-home">
+
+<div class="clock-card">
+  <div class="date-str" id="dateStr"></div>
+  <div class="time-str" id="timeStr">--:--</div>
+  <span class="status-pill off" id="statusPill">Off Duty</span>
+</div>
+
+<!-- STATE 1: Nothing set yet -->
+<div id="freshState">
+  <div class="btn-wrap">
+    <button class="punch-btn btn-start" onclick="confirmSetInTime()">
+      <span class="icon">▶</span>
+      <span class="label">Set In-Time</span>
+      <span class="sub">Tap to mark your arrival</span>
+    </button>
+  </div>
+</div>
+
+<!-- STATE 2: In-time set, waiting for out-time -->
+<div id="onDutyState" class="hidden">
+  <div class="info-card card-on">
+    <div class="card-title">On Duty</div>
+    <div class="editable-row">
+      <span class="lbl">In Time</span>
+      <span class="val" id="onDutyInTime">--</span>
+      <button class="edit-btn" id="editInBtn" onclick="editInTime()">✏ Edit</button>
+    </div>
+    <div class="info-row">
+      <span class="lbl">Hours so far</span>
+      <span class="val" id="liveHours">--</span>
+    </div>
+    <div id="overnightNote" class="overnight-note hidden"></div>
+  </div>
+  <div class="btn-wrap">
+    <button class="punch-btn btn-end" onclick="confirmSetOutTime()">
+      <span class="icon">⏹</span>
+      <span class="label">Set Out-Time</span>
+      <span class="sub">Tap to mark your departure</span>
+    </button>
+  </div>
+</div>
+
+<!-- STATE 3: Both times set -->
+<div id="doneState" class="hidden">
+  <div class="info-card card-done">
+    <div class="card-title">Duty Summary</div>
+    <div class="info-row">
+      <span class="lbl">In Time</span>
+      <span class="val" id="doneInTime">--</span>
+    </div>
+    <div class="editable-row">
+      <span class="lbl">Out Time</span>
+      <span class="val" id="doneOutTime">--</span>
+      <button class="edit-btn" id="editOutBtn" onclick="editOutTime()">✏ Edit</button>
+    </div>
+    <div class="info-row">
+      <span class="lbl">Total Hours</span>
+      <span class="val" id="doneTotalHrs">--</span>
+    </div>
+    <div class="info-row">
+      <span class="lbl">Overtime Hours</span>
+      <span class="val orange" id="doneOTHrs">--</span>
+    </div>
+    <div class="info-row">
+      <span class="lbl">Overtime Pay</span>
+      <span class="val green" id="doneOTPay">--</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATE 4: Forgotten punch-out warning + time picker -->
+<div id="forgotState" class="hidden">
+  <div class="warn-card">
+    <span class="warn-icon">⚠️</span>
+    <div class="warn-title">Yesterday's duty wasn't closed</div>
+    <div class="warn-sub" id="forgotSub">You punched in but never set your out-time.</div>
+    <div class="warn-detail">
+      <div class="warn-detail-row">
+        <span class="lbl">Date</span>
+        <span class="val" id="forgotDate">—</span>
+      </div>
+      <div class="warn-detail-row">
+        <span class="lbl">Punched in at</span>
+        <span class="val" id="forgotInTime">—</span>
+      </div>
+      <div class="warn-detail-row">
+        <span class="lbl">Out-time</span>
+        <span class="val" style="color:#dc2626;">Not recorded</span>
+      </div>
+    </div>
+    <div class="time-picker-section">
+      <span class="time-picker-label" id="forgotPickerLabel">What time did your duty end?</span>
+      <input type="time" id="forgotOutTime" value="21:00">
+    </div>
+    <button class="btn-log" id="forgotLogBtn" onclick="logForgottenPunchOut()">✓ Log out-time</button>
+  </div>
+</div>
+
+<!-- STATE 5: Forgotten punch-out confirmed -->
+<div id="forgotConfirmState" class="hidden">
+  <div class="confirm-card">
+    <span class="confirm-icon">✅</span>
+    <div class="confirm-title" id="forgotConfirmTitle">Duty logged</div>
+    <div class="confirm-sub">Out-time has been recorded and sent.</div>
+    <div class="confirm-detail">
+      <div class="confirm-row">
+        <span class="lbl">Date</span>
+        <span class="val" id="fcDate">—</span>
+      </div>
+      <div class="confirm-row">
+        <span class="lbl">In Time</span>
+        <span class="val" id="fcInTime">—</span>
+      </div>
+      <div class="confirm-row">
+        <span class="lbl">Out Time</span>
+        <span class="val" id="fcOutTime">—</span>
+      </div>
+      <div class="confirm-row">
+        <span class="lbl">Total Hours</span>
+        <span class="val" id="fcTotalHrs">—</span>
+      </div>
+      <div class="confirm-row">
+        <span class="lbl">Overtime</span>
+        <span class="val" id="fcOT">—</span>
+      </div>
+    </div>
+    <button class="btn-start-today" onclick="startFreshAfterForgot()">Start Today's Duty →</button>
+  </div>
+</div>
+
+<!-- Monthly earnings — visible last day of month + first 7 days of next month -->
+<div class="info-card card-earnings hidden" id="monthlyCard">
+  <div class="earnings-card-header">
+    <div class="card-title">💰 Monthly Earnings — <span id="meMonth"></span></div>
+    <button class="refresh-btn" onclick="maybeShowMonthlyEarnings()">↻ Refresh</button>
+  </div>
+  <!-- pending approval -->
+  <div id="earningsPending" class="earnings-center">
+    <span class="ec-icon">🔒</span>
+    <div class="ec-title">Awaiting Approval</div>
+    <div class="ec-sub">Your earnings will appear here once your employer approves this month.</div>
+  </div>
+  <!-- connection error -->
+  <div id="earningsError" class="earnings-center hidden">
+    <span class="ec-icon" style="font-size:30px">⚠️</span>
+    <div class="ec-title" style="color:#dc2626">Could Not Connect</div>
+    <div class="ec-sub">Check your internet connection and try again.</div>
+    <button class="retry-btn" onclick="maybeShowMonthlyEarnings()">↻ Retry</button>
+  </div>
+  <!-- approved -->
+  <div id="earningsApproved" class="hidden">
+    <div class="info-row"><span class="lbl">Days Worked</span><span class="val" id="meDays">--</span></div>
+    <div class="info-row"><span class="lbl">Overtime Hours</span><span class="val orange" id="meOTHrs">--</span></div>
+    <div class="info-row"><span class="lbl">Overtime Pay</span><span class="val" id="meOTPay">--</span></div>
+    <div class="info-row"><span class="lbl">Fixed Salary</span><span class="val" id="meFixed">--</span></div>
+    <div class="info-row total-row">
+      <span class="lbl" style="font-weight:700;color:#0f172a">Total Earnings</span>
+      <span class="val big-total" id="meTotal">--</span>
+    </div>
+  </div>
+</div>
+
+<div class="sync-line" id="syncLine"></div>
+
+</div><!-- end page-home -->
+
+<!-- ── THIS MONTH PAGE ───────────────────────────────────────── -->
+<div class="page" id="page-month">
+  <div id="mtLoading" class="tab-loading" style="margin-top:40px;">Loading…</div>
+  <div id="mtError" class="hidden" style="text-align:center;padding:40px 20px;">
+    <div style="font-size:28px;margin-bottom:12px;">⚠️</div>
+    <div style="color:#dc2626;font-weight:700;margin-bottom:8px;">Could not load</div>
+    <button class="retry-btn" onclick="loadThisMonth()">↻ Retry</button>
+  </div>
+  <div id="mtData" class="hidden">
+    <div class="info-card accent-amber" style="margin-top:16px;">
+      <div class="card-title">⚡ <span id="mtMonthLabel">This Month</span> — Running Total</div>
+      <div class="info-row"><span class="lbl">Days worked</span><span class="val" id="mtDays">—</span></div>
+      <div class="info-row"><span class="lbl">OT this month</span><span class="val orange" id="mtOTHours">—</span></div>
+      <div class="info-row"><span class="lbl">OT earnings so far</span><span class="val green" id="mtOTPay">—</span></div>
+    </div>
+    <div class="info-card accent-indigo">
+      <div class="card-title">📋 Overtime Days</div>
+      <div id="mtOTTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY PAGE ──────────────────────────────────────────── -->
+<div class="page" id="page-history">
+  <div id="histLoading" class="tab-loading" style="margin-top:40px;">Loading…</div>
+  <div id="histData" class="hidden">
+    <div class="info-card accent-sky" style="margin-top:16px;">
+      <div class="card-title">🏦 Salary History</div>
+      <div class="tbl-head" style="grid-template-columns:1fr 66px 44px 70px;">
+        <span>Month</span>
+        <span class="ta-right">Fixed</span>
+        <span class="ta-right">OT</span>
+        <span class="ta-right">Total</span>
+      </div>
+      <div id="histTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EMPLOYER VIEW ─────────────────────────────────────────── -->
+<div class="page" id="page-employer">
+  <div class="clock-card">
+    <div class="date-str" id="empDateStr"></div>
+    <div class="time-str" id="empTimeStr">--:--</div>
+    <span class="status-pill off" id="empStatusPill">Loading…</span>
+  </div>
+  <div class="info-card" id="empCard">
+    <div class="tab-loading">Loading…</div>
+  </div>
+  <div id="empMTDSection"></div>
+  <div id="empApprovalSection"></div>
+  <div style="text-align:center; padding: 0 16px 24px;">
+    <div id="empLastRefreshed" style="font-size:12px; color:#94a3b8; margin-bottom:12px;"></div>
+    <button onclick="refreshEmployerView()" style="padding:10px 28px; background:#0f172a; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;">↻ Refresh</button>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ────────────────────────────────────────────── -->
+<nav class="nav">
+  <button class="nav-btn active" id="nav-home" onclick="goPage('home')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-lbl">Home</span>
+  </button>
+  <button class="nav-btn" id="nav-month" onclick="goPage('month')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-lbl">This Month</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="goPage('history')">
+    <span class="nav-icon">🏦</span>
+    <span class="nav-lbl">History</span>
+  </button>
+</nav>
+
+<script>
+  // ─────────────────────────────────────────────────────────────
+  const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwfXOZUUUrY7ZzyqO1aOPcY7cVlGLiE4wc4vusRfBmGpERzqNSFjf-E1K9m6Et1ZeQR/exec';
+  const DRIVER_NAME    = 'Nikhil Pujari';
+  const OT_AFTER       = 10;
+  const OT_RATE        = 75;
+  const FIXED_SALARY   = 24000; // revised May 2026 onwards
+  const SYNC_QUEUE_KEY = 'pendingSyncs';
+  const FIRST_MONTH    = '2026-05'; // app launched May 2026; don't surface earlier months
+  // ─────────────────────────────────────────────────────────────
+
+  let liveTimer;
+
+  // ── tab data cache ────────────────────────────────────────────
+  // This Month: cache for 5 min; invalidated on any punch-out
+  let _mtCache = null, _mtCacheTime = 0;
+  const MT_TTL = 5 * 60 * 1000;
+  // History: cache for entire session (only changes when employer approves)
+  let _histCache = null;
+
+  (function init() {
+    const params = new URLSearchParams(window.location.search);
+    // Employer view: ?employer in the URL → read-only live status screen, no localStorage
+    if (params.has('employer')) { initEmployerView(); return; }
+    // Demo view: ?demo in the URL → realistic mock data, no localStorage, no network
+    if (params.has('demo'))     { initDemoView();     return; }
+    document.getElementById('driverLabel').textContent = DRIVER_NAME;
+    startClock();
+    restoreState();
+    flushPendingSyncs();
+    reconcileWithServer();
+    maybeShowMonthlyEarnings();
+    // Prefetch both tabs in one request — one cold start, both caches warm
+    prefetchAll();
+  })();
+
+  // ── clock ─────────────────────────────────────────────────────
+  // Minute-precision display: align to the next minute boundary, then fire every 60 s.
+  // A 1 s interval wastes 59 of every 60 DOM updates and drains battery on mobile.
+  function startClock() {
+    function tick() {
+      const n = new Date();
+      const t = pad(n.getHours()) + ':' + pad(n.getMinutes());
+      const d = n.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('timeStr').textContent    = t;
+      document.getElementById('dateStr').textContent    = d;
+      document.getElementById('empTimeStr').textContent = t;
+      document.getElementById('empDateStr').textContent = d;
+    }
+    tick();
+    const msToNextMinute = (60 - new Date().getSeconds()) * 1000;
+    setTimeout(() => { tick(); setInterval(tick, 60000); }, msToNextMinute);
+  }
+
+  // ── helpers ───────────────────────────────────────────────────
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function todayStr() {
+    const n = new Date();
+    return n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate());
+  }
+
+  function timeNow() {
+    const n = new Date();
+    return pad(n.getHours()) + ':' + pad(n.getMinutes());
+  }
+
+  // Handles overnight shifts: if out < in as clock values, adds 24h (1440 mins).
+  function hoursBetween(t1, t2) {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (mins < 0) mins += 1440;
+    return mins / 60;
+  }
+
+  function fmtHours(h) {
+    const hrs = Math.floor(h), mins = Math.round((h - hrs) * 60);
+    return mins === 0 ? hrs + 'h' : hrs + 'h ' + mins + 'm';
+  }
+
+  function calcOT(h) {
+    const otHours = Math.max(0, h - OT_AFTER);
+    return { otHours, otPay: Math.round(otHours * OT_RATE) };
+  }
+
+  // Returns true if out-time clock value is earlier than in-time (overnight shift).
+  function isOvernight(inT, outT) {
+    const [h1, m1] = inT.split(':').map(Number);
+    const [h2, m2] = outT.split(':').map(Number);
+    return (h2 * 60 + m2) < (h1 * 60 + m1);
+  }
+
+  // ── state restore on load ─────────────────────────────────────
+  // Only clears saved state when duty is COMPLETE (punchOut exists) and it's a new day.
+  // If still on duty overnight (punchIn set, punchOut not yet set), state is preserved
+  // across midnight so Nikhil can punch out the next morning.
+  function restoreState() {
+    const punchDate = localStorage.getItem('punchDate');
+    const punchOut  = localStorage.getItem('punchOut');
+
+    // Duty complete from a previous day → clear and show fresh
+    if (punchDate && punchDate !== todayStr() && punchOut) {
+      ['punchDate','punchIn','inLocked','punchOut','outLocked'].forEach(k => localStorage.removeItem(k));
+    }
+
+    const inT       = localStorage.getItem('punchIn');
+    const outT      = localStorage.getItem('punchOut');
+    const storedDate = localStorage.getItem('punchDate');
+
+    // Previous-day punch-in with no out-time: forgotten (>18h) or legitimate overnight (<18h)
+    if (storedDate && storedDate !== todayStr() && inT && !outT) {
+      const elapsed = (new Date() - new Date(storedDate + 'T' + inT + ':00')) / 3600000;
+      if (elapsed > 18) { renderForgottenPunchOut(); return; }
+    }
+
+    if (!inT)       renderFresh();
+    else if (!outT) renderOnDuty();
+    else            renderDone();
+  }
+
+  // ── render: fresh ─────────────────────────────────────────────
+  function renderFresh() {
+    stopLiveTimer();
+    show('freshState'); hide('onDutyState'); hide('doneState');
+    hide('forgotState'); hide('forgotConfirmState');
+    setPill('off', 'Off Duty');
+  }
+
+  // ── render: on duty ───────────────────────────────────────────
+  function renderOnDuty() {
+    const inT       = localStorage.getItem('punchIn');
+    const punchDate = localStorage.getItem('punchDate');
+    const inLocked  = localStorage.getItem('inLocked') === '1';
+    hide('freshState'); show('onDutyState'); hide('doneState');
+    hide('forgotState'); hide('forgotConfirmState');
+    setPill('on', 'On Duty');
+    document.getElementById('onDutyInTime').textContent = inT;
+    const btn = document.getElementById('editInBtn');
+    btn.disabled    = inLocked;
+    btn.textContent = inLocked ? '✏ Used' : '✏ Edit';
+    // Show overnight notice if duty started on a previous date
+    const noteEl = document.getElementById('overnightNote');
+    if (punchDate && punchDate !== todayStr()) {
+      noteEl.textContent = '🌙 Overnight duty — started ' + punchDate;
+      noteEl.classList.remove('hidden');
+    } else {
+      noteEl.classList.add('hidden');
+    }
+    startLiveTimer(inT);
+  }
+
+  // ── render: done ──────────────────────────────────────────────
+  function renderDone() {
+    const inT       = localStorage.getItem('punchIn');
+    const outT      = localStorage.getItem('punchOut');
+    const outLocked = localStorage.getItem('outLocked') === '1';
+    const total     = hoursBetween(inT, outT);
+    const { otHours, otPay } = calcOT(total);
+    stopLiveTimer();
+    hide('freshState'); hide('onDutyState'); show('doneState');
+    hide('forgotState'); hide('forgotConfirmState');
+    setPill('done', 'Duty Complete');
+    document.getElementById('doneInTime').textContent   = inT;
+    document.getElementById('doneOutTime').textContent  = outT;
+    document.getElementById('doneTotalHrs').textContent = fmtHours(total);
+    const otHrsEl = document.getElementById('doneOTHrs');
+    otHrsEl.textContent = otHours > 0 ? fmtHours(otHours) : '—';
+    otHrsEl.className   = otHours > 0 ? 'val orange' : 'val muted';
+    document.getElementById('doneOTPay').textContent = otPay > 0 ? '₹' + otPay.toLocaleString('en-IN') : '₹0';
+    const btn = document.getElementById('editOutBtn');
+    btn.disabled    = outLocked;
+    btn.textContent = outLocked ? '✏ Used' : '✏ Edit';
+  }
+
+  // ── live hours counter ────────────────────────────────────────
+  function startLiveTimer(inT) {
+    stopLiveTimer();
+    function tick() {
+      document.getElementById('liveHours').textContent = fmtHours(hoursBetween(inT, timeNow()));
+    }
+    tick(); liveTimer = setInterval(tick, 60000); // minute-precision display — no need for 30 s
+  }
+  function stopLiveTimer() { clearInterval(liveTimer); }
+
+  function setPill(cls, txt) {
+    const p = document.getElementById('statusPill');
+    p.className = 'status-pill ' + cls; p.textContent = txt;
+  }
+  function show(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+  // ── set in-time (first time) ──────────────────────────────────
+  function confirmSetInTime() {
+    const t = timeNow();
+    if (!confirm('Set in-time to ' + t + '?')) return;
+    localStorage.setItem('punchDate', todayStr());
+    localStorage.setItem('punchIn', t);
+    renderOnDuty();
+    sync('punch_in', { date: todayStr(), inTime: t });
+  }
+
+  // ── edit in-time (once only) ──────────────────────────────────
+  function editInTime() {
+    const t         = timeNow();
+    const punchDate = localStorage.getItem('punchDate') || todayStr();
+    if (!confirm('Change in-time to ' + t + '?\n\nYou will not be able to edit again.')) return;
+    localStorage.setItem('punchIn', t);
+    localStorage.setItem('inLocked', '1');
+    renderOnDuty();
+    sync('punch_in', { date: punchDate, inTime: t });
+  }
+
+  // ── set out-time (first time) ─────────────────────────────────
+  function confirmSetOutTime() {
+    const t         = timeNow();
+    const inT       = localStorage.getItem('punchIn');
+    const punchDate = localStorage.getItem('punchDate') || todayStr();
+    const total     = hoursBetween(inT, t);
+    const { otHours, otPay } = calcOT(total);
+    const overnight = isOvernight(inT, t);
+
+    let msg = 'Set out-time to ' + t + '?';
+    if (overnight) msg += '\n\n🌙 Overnight duty (started ' + punchDate + ')';
+    msg += '\n\nTotal: ' + fmtHours(total);
+    if (otHours > 0) msg += '\nOvertime: ' + fmtHours(otHours) + ' → ₹' + otPay;
+    if (total < 0.5) msg += '\n\n⚠️ Less than 30 minutes — is this correct?';
+
+    if (!confirm(msg)) return;
+    localStorage.setItem('punchOut', t);
+    invalidateMTCache();
+    renderDone();
+    maybeShowMonthlyEarnings();
+    syncPunchOut(t);
+  }
+
+  // ── edit out-time (once only) ─────────────────────────────────
+  function editOutTime() {
+    const t         = timeNow();
+    const inT       = localStorage.getItem('punchIn');
+    const total     = hoursBetween(inT, t);
+    const { otHours, otPay } = calcOT(total);
+    const overnight = isOvernight(inT, t);
+
+    let msg = 'Change out-time to ' + t + '?\nYou will not be able to edit again.';
+    if (overnight) msg += '\n\n🌙 Overnight duty detected.';
+    msg += '\n\nNew total: ' + fmtHours(total);
+    if (otHours > 0) msg += '\nOvertime: ' + fmtHours(otHours) + ' → ₹' + otPay;
+    if (total < 0.5) msg += '\n\n⚠️ Less than 30 minutes — is this correct?';
+
+    if (!confirm(msg)) return;
+    localStorage.setItem('punchOut', t);
+    localStorage.setItem('outLocked', '1');
+    invalidateMTCache();
+    renderDone();
+    syncPunchOut(t);
+  }
+
+  // ── sync helpers ──────────────────────────────────────────────
+  // Uses stored punchDate (not today) so overnight duty logs against the correct date.
+  function syncPunchOut(outT) {
+    const inT       = localStorage.getItem('punchIn');
+    const punchDate = localStorage.getItem('punchDate') || todayStr();
+    const total     = hoursBetween(inT, outT);
+    const { otHours, otPay } = calcOT(total);
+    sync('punch_out', {
+      date: punchDate, inTime: inT, outTime: outT,
+      hours: total.toFixed(2), otHours: otHours.toFixed(2), otPay: otPay
+    });
+  }
+
+  function sync(action, data) {
+    setSyncLine('syncing', '⏳ Sending…');
+    const params = new URLSearchParams({ action, name: DRIVER_NAME, ...data });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        const msg = action === 'punch_out' ? '✓ Sent — awaiting employer approval' : '✓ Sent';
+        setSyncLine('synced', msg);
+      })
+      .catch(() => {
+        queueSync(action, data);
+        setSyncLine('fail', '⚠️ No internet — will retry automatically when connection returns');
+      });
+  }
+
+  // ── server reconciliation ─────────────────────────────────────
+  // On every app open:
+  // • If localStorage has a punch-in → verify server also has it; silently re-sync if missing.
+  //   This catches the case where sync() fired but the server never wrote the record
+  //   (cold-start drop, weak network, etc.) — previously invisible because no-cors hid failures.
+  // • If localStorage has no punch-in → check server in case another device punched in.
+  function reconcileWithServer() {
+    const punchIn   = localStorage.getItem('punchIn');
+    const punchDate = localStorage.getItem('punchDate');
+
+    if (punchIn && punchDate) {
+      // Have local punch data — confirm server agrees; re-sync silently if it doesn't
+      const checkDate = punchDate; // may be today or yesterday (overnight)
+      const params = new URLSearchParams({ action: 'get_today', date: checkDate, name: DRIVER_NAME });
+      fetch(SCRIPT_URL + '?' + params.toString())
+        .then(r => r.json())
+        .then(data => {
+          if (data.exists && data.inTime) return; // server has it — all good
+          // Server has no record for this date — the original sync was lost; retry it now
+          const outT = localStorage.getItem('punchOut');
+          if (outT) {
+            const total = hoursBetween(punchIn, outT);
+            const { otHours, otPay } = calcOT(total);
+            sync('punch_out', {
+              date: checkDate, inTime: punchIn, outTime: outT,
+              hours: total.toFixed(2), otHours: otHours.toFixed(2), otPay: otPay
+            });
+          } else {
+            sync('punch_in', { date: checkDate, inTime: punchIn });
+          }
+        })
+        .catch(() => {}); // offline — will catch it on next open
+      return;
+    }
+
+    // No local punch data — check server in case another device has today's record
+    const params = new URLSearchParams({ action: 'get_today', date: todayStr(), name: DRIVER_NAME });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.exists && data.inTime) {
+          applyServerRecord(data); return;
+        }
+        // No record today — check yesterday for an active overnight shift
+        const y = new Date(); y.setDate(y.getDate() - 1);
+        const yStr = y.getFullYear() + '-' + pad(y.getMonth() + 1) + '-' + pad(y.getDate());
+        return fetch(SCRIPT_URL + '?' + new URLSearchParams({ action: 'get_today', date: yStr, name: DRIVER_NAME }).toString())
+          .then(r => r.json())
+          .then(d => { if (d.exists && d.inTime && !d.outTime) applyServerRecord(d); });
+      })
+      .catch(() => {}); // offline — localStorage state stands
+  }
+
+  function applyServerRecord(data) {
+    localStorage.setItem('punchDate', data.date);
+    if (data.inTime)  localStorage.setItem('punchIn',  data.inTime);
+    if (data.outTime) localStorage.setItem('punchOut', data.outTime);
+    else              localStorage.removeItem('punchOut');
+    if (data.inTime && data.outTime) renderDone();
+    else if (data.inTime)            renderOnDuty();
+  }
+
+  // ── offline sync queue ────────────────────────────────────────
+  function queueSync(action, data) {
+    const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+    const key   = action + '_' + (data.date || '');
+    if (!queue.find(q => (q.action + '_' + (q.data.date || '')) === key)) {
+      queue.push({ action, data });
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+    }
+  }
+
+  // Called on every app open — drains the queue one item at a time.
+  // Only removes an item from the queue when the server confirms success (ok: true).
+  // Previously used no-cors which always resolved even on server failure — items were
+  // removed from the queue whether or not the server actually wrote to the sheet.
+  function flushPendingSyncs() {
+    const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+    if (!queue.length) return;
+    const item   = queue[0];
+    const params = new URLSearchParams({ action: item.action, name: DRIVER_NAME, ...item.data });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        // Confirmed success — remove from queue and process next item
+        const remaining = queue.slice(1);
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(remaining));
+        if (remaining.length > 0) setTimeout(flushPendingSyncs, 500);
+      })
+      .catch(() => {}); // offline or server error — keep in queue, retry next open
+  }
+
+  function setSyncLine(cls, msg) {
+    const el = document.getElementById('syncLine');
+    el.className = 'sync-line ' + cls; el.textContent = msg;
+    // Auto-clear success messages — "✓ Sent" staying on screen indefinitely is confusing
+    if (cls === 'synced') setTimeout(() => { el.textContent = ''; el.className = 'sync-line'; }, 4000);
+  }
+
+  // ── monthly earnings ──────────────────────────────────────────
+  // Visible on the last day of the current month, and for the first 7 days of the next month.
+  function monthDisplayTarget() {
+    const now = new Date(), day = now.getDate();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    if (day === lastDay) {
+      const key = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+      if (key < FIRST_MONTH) return null;
+      return { key, label: now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) };
+    }
+    if (day <= 7) {
+      const prev = new Date(now.getFullYear(), now.getMonth(), 0);
+      const key  = prev.getFullYear() + '-' + pad(prev.getMonth() + 1);
+      if (key < FIRST_MONTH) return null;
+      return { key, label: prev.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) };
+    }
+    return null;
+  }
+
+  function maybeShowMonthlyEarnings() {
+    const target = monthDisplayTarget();
+    if (!target) { hide('monthlyCard'); return; }
+    document.getElementById('meMonth').textContent = target.label;
+    show('monthlyCard');
+    show('earningsPending'); hide('earningsApproved'); hide('earningsError');
+    const params = new URLSearchParams({ action: 'approved_summary', month: target.key });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.monthApproved) {
+          renderApprovedEarnings(data);
+        } else {
+          hide('earningsError'); show('earningsPending');
+        }
+      })
+      .catch(() => {
+        hide('earningsPending'); show('earningsError');
+      });
+  }
+
+  // ── forgotten punch-out flow ──────────────────────────────────
+  function renderForgottenPunchOut() {
+    const punchDate = localStorage.getItem('punchDate');
+    const punchIn   = localStorage.getItem('punchIn');
+    stopLiveTimer();
+    hide('freshState'); hide('onDutyState'); hide('doneState');
+    hide('forgotConfirmState'); show('forgotState');
+    setPill('warn', 'Action Required');
+    const d = new Date(punchDate + 'T12:00:00');
+    const dateLabel  = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    const weekday    = d.toLocaleDateString('en-IN', { weekday: 'long' });
+    const dayMonth   = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+    const shortLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    document.getElementById('forgotSub').textContent         = 'You punched in on ' + weekday + ' but never set your out-time.';
+    document.getElementById('forgotDate').textContent        = dateLabel;
+    document.getElementById('forgotInTime').textContent      = punchIn;
+    document.getElementById('forgotPickerLabel').textContent = 'What time did your duty end on ' + dayMonth + '?';
+    document.getElementById('forgotLogBtn').textContent      = '✓ Log ' + shortLabel + ' out-time';
+  }
+
+  function logForgottenPunchOut() {
+    const punchDate = localStorage.getItem('punchDate');
+    const punchIn   = localStorage.getItem('punchIn');
+    const outT      = document.getElementById('forgotOutTime').value;
+    if (!outT) { alert('Please select a time.'); return; }
+    const total = hoursBetween(punchIn, outT);
+    const { otHours, otPay } = calcOT(total);
+    const d = new Date(punchDate + 'T12:00:00');
+    const dateLabel  = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    const shortLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    // Sync the missed day to server
+    sync('punch_out', {
+      date: punchDate, inTime: punchIn, outTime: outT,
+      hours: total.toFixed(2), otHours: otHours.toFixed(2), otPay: otPay
+    });
+    // Populate confirmation screen
+    document.getElementById('forgotConfirmTitle').textContent = shortLabel + ' duty logged';
+    document.getElementById('fcDate').textContent    = dateLabel;
+    document.getElementById('fcInTime').textContent  = punchIn;
+    document.getElementById('fcOutTime').textContent = outT;
+    document.getElementById('fcTotalHrs').textContent = fmtHours(total);
+    const otEl = document.getElementById('fcOT');
+    if (otHours > 0) {
+      otEl.textContent  = fmtHours(otHours) + ' → ₹' + otPay;
+      otEl.style.color  = '#ea580c';
+    } else {
+      otEl.textContent  = '—';
+      otEl.style.color  = '#94a3b8';
+    }
+    // Clear yesterday's state — today starts fresh after this
+    ['punchDate','punchIn','inLocked','punchOut','outLocked'].forEach(k => localStorage.removeItem(k));
+    invalidateMTCache();
+    setPill('done', shortLabel + ' Closed');
+    hide('forgotState'); show('forgotConfirmState');
+    window.scrollTo(0, 0);
+  }
+
+  function startFreshAfterForgot() {
+    hide('forgotConfirmState');
+    renderFresh();
+  }
+
+  // ── tab navigation ────────────────────────────────────────────
+  function goPage(name) {
+    ['home','month','history'].forEach(p => {
+      document.getElementById('page-' + p).classList.toggle('active', p === name);
+      document.getElementById('nav-' + p).classList.toggle('active', p === name);
+    });
+    window.scrollTo(0, 0);
+    if (name === 'month')   loadThisMonth();
+    if (name === 'history') loadHistory();
+  }
+
+  // ── This Month tab ────────────────────────────────────────────
+  // Strategy: show cached data instantly if available (< 5 min old).
+  // If stale/missing: show cached immediately then re-fetch silently in background.
+  // Both tabs are prefetched together on app open via prefetchAll().
+
+  // Combined prefetch: one cold-start hit warms both the This Month and History caches.
+  function prefetchAll() {
+    const month  = todayStr().substring(0, 7);
+    const params = new URLSearchParams({ action: 'get_prefetch', month, name: DRIVER_NAME });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.monthOT) { _mtCache = data.monthOT; _mtCacheTime = Date.now(); }
+        if (data.history) { _histCache = data.history.months || []; }
+      })
+      .catch(() => {}); // silent — individual tab fetches are the fallback
+  }
+
+  function loadThisMonth() {
+    const month = todayStr().substring(0, 7);
+    document.getElementById('mtMonthLabel').textContent =
+      new Date(month + '-01T12:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+    // Cache hit → instant render, no spinner
+    if (_mtCache && (Date.now() - _mtCacheTime < MT_TTL)) {
+      hide('mtLoading'); hide('mtError'); show('mtData');
+      renderMTData(_mtCache);
+      return;
+    }
+
+    // Stale cache → show immediately, silently refresh in background
+    if (_mtCache) {
+      hide('mtLoading'); hide('mtError'); show('mtData');
+      renderMTData(_mtCache);
+      fetchMTSilent(month); // background refresh
+      return;
+    }
+
+    // No cache → show spinner and wait
+    show('mtLoading'); hide('mtData'); hide('mtError');
+    _fetchMT(month)
+      .then(data => { hide('mtLoading'); hide('mtError'); show('mtData'); renderMTData(data); })
+      .catch(() => { hide('mtLoading'); hide('mtData'); show('mtError'); });
+  }
+
+  function fetchMTSilent(month) {
+    _fetchMT(month)
+      .then(data => {
+        // Update display only if This Month tab is currently visible
+        if (document.getElementById('page-month').classList.contains('active')) renderMTData(data);
+      })
+      .catch(() => {});
+  }
+
+  function renderMTData(data) {
+    const t = data.totals;
+    document.getElementById('mtDays').textContent    = t.days + (t.days === 1 ? ' day' : ' days');
+    document.getElementById('mtOTHours').textContent = t.otHours > 0 ? fmtHours(t.otHours) : '—';
+    document.getElementById('mtOTPay').textContent   = t.otPay.toLocaleString('en-IN');
+    const tableEl = document.getElementById('mtOTTable');
+    if (!data.days || data.days.length === 0) {
+      tableEl.innerHTML = '<div class="tab-empty">No overtime days this month yet.</div>';
+      return;
+    }
+    let html = '<div class="tbl-head" style="grid-template-columns:1fr 58px 58px 50px;">' +
+      '<span>Date</span><span class="ta-right">Total</span>' +
+      '<span class="ta-right">OT</span><span class="ta-right">Pay</span></div>';
+    data.days.forEach(d => {
+      const lbl = new Date(d.date + 'T12:00:00')
+        .toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      html += '<div class="tbl-row" style="grid-template-columns:1fr 58px 58px 50px;">' +
+        '<span style="font-size:14px;font-weight:600;white-space:nowrap;">' + lbl + '</span>' +
+        '<span style="font-size:13px;color:#475569;text-align:right;">' + fmtHours(d.totalHours) + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:#ea580c;text-align:right;">' + fmtHours(d.otHours) + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:#15803d;text-align:right;">' + d.otPay + '</span>' +
+        '</div>';
+    });
+    html += '<div class="tbl-total" style="grid-template-columns:1fr 58px 58px 50px;">' +
+      '<span style="font-size:14px;font-weight:700;">Total</span><span></span>' +
+      '<span style="font-size:14px;font-weight:700;color:#ea580c;text-align:right;">' + fmtHours(t.otHours) + '</span>' +
+      '<span style="font-size:14px;font-weight:700;color:#15803d;text-align:right;">' + t.otPay.toLocaleString('en-IN') + '</span>' +
+      '</div>';
+    tableEl.innerHTML = html;
+  }
+
+  // Call after any punch-out so This Month shows updated data next open
+  function invalidateMTCache() { _mtCache = null; }
+
+  // Single source of truth for fetching This Month data — updates cache on success.
+  function _fetchMT(month) {
+    const params = new URLSearchParams({ action: 'get_month_ot', month, name: DRIVER_NAME });
+    return fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => { _mtCache = data; _mtCacheTime = Date.now(); return data; });
+  }
+
+  // ── History tab ───────────────────────────────────────────────
+  // History only changes when employer approves a month — cache for entire session.
+  const HISTORY_HARDCODED = [
+    { key: '2026-04', label: 'April 2026', fixed: 23000, otPay: 1000, total: 24000 }
+  ];
+
+  function loadHistory() {
+    // Instant if already fetched this session
+    if (_histCache !== null) {
+      hide('histLoading'); show('histData');
+      renderHistory(_histCache);
+      return;
+    }
+    show('histLoading'); hide('histData');
+    fetch(SCRIPT_URL + '?' + new URLSearchParams({ action: 'get_history' }).toString())
+      .then(r => r.json())
+      .then(data => {
+        _histCache = data.months || [];
+        hide('histLoading'); show('histData');
+        renderHistory(_histCache);
+      })
+      .catch(() => {
+        // Don't cache on error so user can retry; show hardcoded in the meantime
+        hide('histLoading'); show('histData');
+        renderHistory([]);
+      });
+  }
+
+  function renderHistory(serverMonths) {
+    const serverKeys = serverMonths.map(m => m.key);
+    const all = [
+      ...serverMonths,
+      ...HISTORY_HARDCODED.filter(m => !serverKeys.includes(m.key))
+    ].sort((a, b) => b.key.localeCompare(a.key));
+    let html = '';
+    all.forEach(m => {
+      const shortLabel = new Date(m.key + '-01T12:00:00')
+        .toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+      const fixedAmt = (m.fixed || FIXED_SALARY).toLocaleString('en-IN');
+      const otAmt    = m.otPay > 0 ? m.otPay.toLocaleString('en-IN') : '—';
+      html += '<div class="tbl-row" style="grid-template-columns:1fr 66px 44px 70px;">' +
+        '<div><div style="font-size:14px;font-weight:700;">' + shortLabel + '</div>' +
+        '<div class="approved-badge">✓ Approved</div></div>' +
+        '<span style="font-size:13px;font-weight:700;color:#475569;text-align:right;">' + fixedAmt + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:#ea580c;text-align:right;">' + otAmt + '</span>' +
+        '<span style="font-size:14px;font-weight:800;color:#15803d;text-align:right;">' + m.total.toLocaleString('en-IN') + '</span>' +
+        '</div>';
+    });
+    document.getElementById('histTable').innerHTML =
+      html || '<div class="tab-empty">No approved months yet.</div>';
+  }
+
+  // ── Demo view ─────────────────────────────────────────────────
+  function initDemoView() {
+    document.getElementById('driverLabel').textContent = DRIVER_NAME;
+    startClock();
+
+    // Demo banner
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#6366f1;color:white;text-align:center;font-size:12px;font-weight:700;padding:6px;letter-spacing:0.5px;';
+    banner.textContent = '👁 DEMO MODE — Sample data only';
+    document.body.insertBefore(banner, document.querySelector('.header').nextSibling);
+
+    // Mock state: punched in at 08:30, currently on duty
+    const demoIn = '08:30';
+    hide('freshState'); show('onDutyState'); hide('doneState');
+    hide('forgotState'); hide('forgotConfirmState');
+    setPill('on', 'On Duty');
+    document.getElementById('onDutyInTime').textContent = demoIn;
+    const editBtn = document.getElementById('editInBtn');
+    editBtn.disabled = true; editBtn.textContent = '✏ Edit';
+    document.getElementById('overnightNote').classList.add('hidden');
+
+    // Live hours counter from mock in-time
+    function demoTick() {
+      document.getElementById('liveHours').textContent = fmtHours(hoursBetween(demoIn, timeNow()));
+    }
+    demoTick(); setInterval(demoTick, 60000);
+
+    // Disable punch-out button
+    const outBtn = document.querySelector('#onDutyState .punch-btn');
+    if (outBtn) { outBtn.onclick = function() { alert('Demo mode — buttons are disabled.'); }; }
+
+    // Mock This Month data
+    _mtCache = {
+      days: [
+        { date: '2026-05-01', totalHours: 11.5,  otHours: 1.5,  otPay: 113 },
+        { date: '2026-05-02', totalHours: 10.75, otHours: 0.75, otPay: 56  },
+        { date: '2026-05-05', totalHours: 11.17, otHours: 1.17, otPay: 88  },
+        { date: '2026-05-06', totalHours: 11.05, otHours: 1.05, otPay: 79  },
+        { date: '2026-05-07', totalHours: 10.3,  otHours: 0.3,  otPay: 23  },
+      ],
+      totals: { days: 6, otHours: 4.77, otPay: 358 }
+    };
+    _mtCacheTime = Date.now();
+
+    // Mock History data
+    _histCache = [
+      { key: '2026-04', label: 'April 2026',    fixed: 23000, otPay: 1000, total: 24000, status: 'Approved' },
+      { key: '2026-03', label: 'March 2026',    fixed: 23000, otPay: 319,  total: 23319, status: 'Approved' },
+      { key: '2026-02', label: 'February 2026', fixed: 23000, otPay: 0,    total: 23000, status: 'Approved' },
+    ];
+
+    setSyncLine('synced', '✓ Demo mode — no data is saved');
+    setTimeout(() => { document.getElementById('syncLine').textContent = ''; }, 4000);
+  }
+
+  // ── Employer view ─────────────────────────────────────────────
+  function initEmployerView() {
+    document.getElementById('driverLabel').textContent = 'Live Status — ' + DRIVER_NAME;
+    document.querySelector('.nav').classList.add('hidden');
+    document.getElementById('page-home').classList.remove('active');
+    document.getElementById('page-employer').classList.add('active');
+    startClock();
+    refreshEmployerView();
+    setInterval(refreshEmployerView, 60000); // auto-refresh every minute
+  }
+
+  function refreshEmployerView() {
+    loadEmployerData();
+  }
+
+  // Single fetch replaces get_today + get_month_ot + get_month_summary.
+  // Server reads each sheet once; client makes one HTTP round-trip instead of three.
+  function loadEmployerData() {
+    const date   = todayStr();
+    const month  = date.substring(0, 7);
+    const label  = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const mtdSection  = document.getElementById('empMTDSection');
+    const apprSection = document.getElementById('empApprovalSection');
+    const firstLoad   = mtdSection.innerHTML.trim() === '' || apprSection.innerHTML.trim() === '';
+
+    if (firstLoad) {
+      mtdSection.innerHTML =
+        '<div class="info-card accent-indigo" style="margin-top:0;">' +
+          '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
+          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
+        '</div>';
+      apprSection.innerHTML =
+        '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
+          '<div class="card-title">💰 ' + label + ' Payout</div>' +
+          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
+        '</div>';
+    }
+
+    const params = new URLSearchParams({ action: 'get_employer_data', date, month, name: DRIVER_NAME });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        renderEmployerView(data.today);
+        const n = new Date();
+        document.getElementById('empLastRefreshed').textContent =
+          'Last refreshed at ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+        renderEmployerMTD(data.monthOT, label);
+        renderMonthApproval(data.approval, label);
+      })
+      .catch(() => {
+        document.getElementById('empCard').innerHTML =
+          '<div style="text-align:center;padding:20px 0;color:#dc2626;font-weight:600;">⚠️ Could not connect — tap Refresh</div>';
+        if (firstLoad) {
+          mtdSection.innerHTML =
+            '<div class="info-card accent-indigo" style="margin-top:0;">' +
+              '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
+              '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
+            '</div>';
+          apprSection.innerHTML =
+            '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
+              '<div class="card-title">💰 ' + label + ' Payout</div>' +
+              '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
+            '</div>';
+        }
+      });
+  }
+
+  function renderEmployerView(data) {
+    const card = document.getElementById('empCard');
+    if (!data.exists || !data.inTime) {
+      setEmpPill('off', 'Not On Duty');
+      card.innerHTML =
+        '<div style="text-align:center;padding:28px 0;">' +
+        '<div style="font-size:40px;margin-bottom:10px;">🔴</div>' +
+        '<div style="font-size:16px;font-weight:700;color:#64748b;">Not punched in today</div>' +
+        '</div>';
+      return;
+    }
+    const inT = data.inTime, outT = data.outTime;
+    if (outT) {
+      const total = hoursBetween(inT, outT);
+      const { otHours, otPay } = calcOT(total);
+      setEmpPill('done', 'Duty Complete');
+      card.innerHTML =
+        '<div class="card-title">Today\'s Summary</div>' +
+        '<div class="info-row"><span class="lbl">In Time</span><span class="val">' + inT + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Out Time</span><span class="val">' + outT + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Total Hours</span><span class="val">' + fmtHours(total) + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Overtime</span><span class="val ' + (otHours > 0 ? 'orange' : 'muted') + '">' +
+        (otHours > 0 ? fmtHours(otHours) + ' → ₹' + otPay : '—') + '</span></div>';
+    } else {
+      const soFar = hoursBetween(inT, timeNow());
+      setEmpPill('on', 'On Duty');
+      card.innerHTML =
+        '<div class="card-title">Live Status</div>' +
+        '<div class="info-row"><span class="lbl">In Time</span><span class="val">' + inT + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Out Time</span><span class="val muted">Not punched out yet</span></div>' +
+        '<div class="info-row"><span class="lbl">Hours so far</span><span class="val">' + fmtHours(soFar) + '</span></div>';
+    }
+  }
+
+  function setEmpPill(cls, txt) {
+    const p = document.getElementById('empStatusPill');
+    p.className = 'status-pill ' + cls; p.textContent = txt;
+  }
+
+  // loadEmployerMTD() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
+
+  function renderEmployerMTD(data, label) {
+    const section  = document.getElementById('empMTDSection');
+    const t        = (data && data.totals) ? data.totals : { days: 0, otHours: 0, otPay: 0 };
+    const projected = FIXED_SALARY + (t.otPay || 0);
+    section.innerHTML =
+      '<div class="info-card accent-indigo" style="margin-top:0;">' +
+        '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
+        '<div class="info-row"><span class="lbl">Days Worked</span><span class="val">' + (t.days || 0) + ' days</span></div>' +
+        '<div class="info-row"><span class="lbl">OT Hours</span><span class="val orange">' + (t.otHours > 0 ? fmtHours(t.otHours) : '—') + '</span></div>' +
+        '<div class="info-row"><span class="lbl">OT Pay</span><span class="val orange">' + (t.otPay > 0 ? '₹' + t.otPay : '—') + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Fixed Salary</span><span class="val">₹' + FIXED_SALARY.toLocaleString('en-IN') + '</span></div>' +
+        '<div class="info-row" style="border-top:2px solid #e0e7ff;margin-top:6px;padding-top:12px;">' +
+          '<span class="lbl" style="font-weight:700;color:#0f172a;">Projected Total</span>' +
+          '<span class="val" style="font-size:20px;font-weight:800;color:#15803d;">₹' + projected.toLocaleString('en-IN') + '</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // loadMonthApproval() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
+
+  function renderMonthApproval(data, label) {
+    const section  = document.getElementById('empApprovalSection');
+    const token    = new URLSearchParams(window.location.search).get('token') || '';
+    const approved = data.status === 'Approved';
+    const rejected = data.status === 'Rejected';
+    const pending  = !approved && !rejected;
+
+    // Status badge
+    let badge = '';
+    if (approved) badge = '<span style="font-size:12px;font-weight:700;color:#15803d;background:#dcfce7;padding:4px 10px;border-radius:20px;">✓ Approved</span>';
+    if (rejected) badge = '<span style="font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2;padding:4px 10px;border-radius:20px;">✗ Rejected</span>';
+    if (pending)  badge = '<span style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;padding:4px 10px;border-radius:20px;">Pending</span>';
+
+    // Approve / Reject buttons — only if token is in URL
+    let actionHtml = '';
+    if (pending && token) {
+      actionHtml =
+        '<div style="display:flex;gap:10px;margin-top:16px;">' +
+        '<button onclick="approveMonth(\'approve_month\',\'' + data.month + '\')" ' +
+          'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#16a34a,#22c55e);' +
+          'color:white;font-size:15px;font-weight:700;cursor:pointer;">✓ Approve</button>' +
+        '<button onclick="approveMonth(\'reject_month\',\'' + data.month + '\')" ' +
+          'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);' +
+          'color:white;font-size:15px;font-weight:700;cursor:pointer;">✗ Reject</button>' +
+        '</div>';
+    } else if (pending && !token) {
+      actionHtml = '<div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center;">Add &token=YOUR_TOKEN to URL to enable approval</div>';
+    }
+
+    // Google Pay button — only shown after approval
+    const gpayHtml = approved
+      ? '<a href="upi://pay?pa=nikhilpujari1991%40okicici&pn=Nikhil%20Pujari&am=' + data.total + '&cu=INR&tn=' + encodeURIComponent(label + ' Salary') + '" ' +
+        'style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;' +
+        'background:white;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px 20px;' +
+        'text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.10);">' +
+        '<img src="data:image/png;base64,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" ' +
+          'width="36" height="36" style="object-fit:contain;" alt="Google Pay">' +
+        '<span style="font-size:15px;font-weight:800;color:#0f172a;">Pay ₹' + data.total.toLocaleString('en-IN') + ' via Google Pay</span>' +
+        '</a>'
+      : '';
+
+    section.innerHTML =
+      '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+          '<div class="card-title" style="margin-bottom:0;">💰 ' + label + ' Payout</div>' +
+          badge +
+        '</div>' +
+        '<div class="info-row"><span class="lbl">Days Worked</span><span class="val">' + data.days + ' days</span></div>' +
+        '<div class="info-row"><span class="lbl">OT Hours</span><span class="val orange">' + (data.otHours > 0 ? fmtHours(data.otHours) : '—') + '</span></div>' +
+        '<div class="info-row"><span class="lbl">OT Pay</span><span class="val orange">' + (data.otPay > 0 ? '₹' + data.otPay : '—') + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Fixed Salary</span><span class="val">₹' + data.fixed.toLocaleString('en-IN') + '</span></div>' +
+        '<div class="info-row" style="border-top:2px solid #fde68a;margin-top:6px;padding-top:12px;">' +
+          '<span class="lbl" style="font-weight:700;color:#0f172a;">Total Payout</span>' +
+          '<span class="val" style="font-size:22px;font-weight:800;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
+        '</div>' +
+        actionHtml +
+        gpayHtml +
+      '</div>';
+  }
+
+  function approveMonth(action, month) {
+    const token  = new URLSearchParams(window.location.search).get('token') || '';
+    const label  = action === 'approve_month' ? 'Approve' : 'Reject';
+    if (!confirm(label + ' ' + month + ' salary payout?')) return;
+    const params = new URLSearchParams({ action, month, token, format: 'json' });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) loadEmployerData();
+        else alert('Error: ' + (data.error || 'Something went wrong'));
+      })
+      .catch(() => alert('Could not connect. Please try again.'));
+  }
+
+  function renderApprovedEarnings(data) {
+    hide('earningsPending'); hide('earningsError'); show('earningsApproved');
+    document.getElementById('meDays').textContent  = data.days + (data.days === 1 ? ' day' : ' days');
+    document.getElementById('meOTHrs').textContent = data.otHours > 0 ? fmtHours(data.otHours) : '—';
+    document.getElementById('meOTPay').textContent = '₹' + data.otPay.toLocaleString('en-IN');
+    document.getElementById('meFixed').textContent = '₹' + FIXED_SALARY.toLocaleString('en-IN');
+    document.getElementById('meTotal').textContent = '₹' + data.total.toLocaleString('en-IN');
+  }
+</script>
+</body>
+</html>
