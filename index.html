@@ -236,6 +236,46 @@
     .status-pill.warn { background: #fef3c7; color: #92400e; }
 
     .hidden { display: none !important; }
+
+    /* ── Employer: Redesigned View ─────────────────────────────── */
+    .emp-hero {
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      padding: 48px 20px 28px;
+    }
+    .emp-hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .emp-hero-label { color: #94a3b8; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+    .emp-hero-status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .emp-pulse-dot {
+      width: 10px; height: 10px; background: #22c55e; border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.25); flex-shrink: 0;
+      animation: pulse-green 2s infinite;
+    }
+    .emp-pulse-dot.off  { background: #64748b; box-shadow: 0 0 0 3px rgba(100,116,139,0.2); animation: none; }
+    .emp-pulse-dot.done { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); animation: none; }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0.08); }
+    }
+    .emp-hero-status-txt { font-size: 14px; font-weight: 700; }
+    .emp-hero-status-txt.on   { color: #22c55e; }
+    .emp-hero-status-txt.off  { color: #64748b; }
+    .emp-hero-status-txt.done { color: #3b82f6; }
+    .emp-hero-name { color: #f8fafc; font-size: 15px; font-weight: 700; margin-top: 4px; }
+    .emp-hero-car { display: flex; align-items: center; gap: 6px; margin-top: 5px; white-space: nowrap; }
+    .emp-hero-car-name { color: #94a3b8; font-size: 12px; font-weight: 500; }
+    .emp-hero-car-sep  { color: #334155; font-size: 10px; }
+    .emp-hero-plate { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.5px; }
+    .emp-hero-since { color: rgba(248,250,252,0.65); font-size: 13px; font-weight: 500; margin-top: 8px; }
+    .emp-hero-since .accent { color: #f59e0b; font-weight: 700; }
+    .emp-hero-timebox { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; text-align: right; flex-shrink: 0; }
+    .emp-hero-time-lbl { color: #64748b; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .emp-hero-time-val { color: #f8fafc; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+    .emp-kpi-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 16px; margin-top: -16px; position: relative; z-index: 2; }
+    .emp-kpi-tile { background: white; border-radius: 14px; padding: 12px 8px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+    .emp-kpi-val { font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; line-height: 1; margin-bottom: 4px; }
+    .emp-kpi-val.green { color: #15803d; }
+    .emp-kpi-val.amber { color: #d97706; }
+    .emp-kpi-lbl { font-size: 9px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -461,18 +501,17 @@
 
 <!-- ── EMPLOYER VIEW ─────────────────────────────────────────── -->
 <div class="page" id="page-employer">
-  <div class="clock-card">
-    <div class="date-str" id="empDateStr"></div>
-    <div class="time-str" id="empTimeStr">--:--</div>
-    <span class="status-pill off" id="empStatusPill">Loading…</span>
+  <div id="empHeroHeader">
+    <div class="emp-hero">
+      <div style="text-align:center;padding:20px 0;color:#94a3b8;font-size:14px;">Loading…</div>
+    </div>
   </div>
-  <div class="info-card" id="empCard">
-    <div class="tab-loading">Loading…</div>
+  <div id="empKPIStrip" class="emp-kpi-strip"></div>
+  <div style="padding: 14px 16px 0; display:flex; flex-direction:column; gap:10px;">
+    <div id="empAdvanceSection"></div>
+    <div id="empApprovalSection"></div>
   </div>
-  <div id="empMTDSection"></div>
-  <div id="empAdvanceSection"></div>
-  <div id="empApprovalSection"></div>
-  <div style="text-align:center; padding: 0 16px 24px;">
+  <div style="text-align:center; padding: 16px 16px 24px;">
     <div id="empLastRefreshed" style="font-size:12px; color:#94a3b8; margin-bottom:12px;"></div>
     <button onclick="refreshEmployerView()" style="padding:10px 28px; background:#0f172a; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;">↻ Refresh</button>
   </div>
@@ -498,6 +537,8 @@
   // ─────────────────────────────────────────────────────────────
   const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbyTWhTEbAcA357DDf-m9qraeBnNXO1gDKZwPL9fUFosED-IB9iszjvq0cY7bvzuGXzV/exec';
   const DRIVER_NAME    = 'Nikhil Pujari';
+  const CAR_NAME       = 'Skoda Slavia';
+  const CAR_NUMBER     = 'MH02 FR8431';
   const OT_AFTER       = 10;
   const OT_RATE        = 75;
   const FIXED_SALARY   = 24000; // revised May 2026 onwards
@@ -540,10 +581,8 @@
       const n = new Date();
       const t = pad(n.getHours()) + ':' + pad(n.getMinutes());
       const d = n.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      document.getElementById('timeStr').textContent    = t;
-      document.getElementById('dateStr').textContent    = d;
-      document.getElementById('empTimeStr').textContent = t;
-      document.getElementById('empDateStr').textContent = d;
+      document.getElementById('timeStr').textContent = t;
+      document.getElementById('dateStr').textContent = d;
     }
     tick();
     const msToNextMinute = (60 - new Date().getSeconds()) * 1000;
@@ -1229,57 +1268,33 @@
     const date   = todayStr();
     const month  = date.substring(0, 7);
     const label  = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-    const mtdSection  = document.getElementById('empMTDSection');
     const advSection  = document.getElementById('empAdvanceSection');
     const apprSection = document.getElementById('empApprovalSection');
-    const firstLoad   = mtdSection.innerHTML.trim() === '' || apprSection.innerHTML.trim() === '';
-
-    if (firstLoad) {
-      mtdSection.innerHTML =
-        '<div class="info-card accent-indigo" style="margin-top:0;">' +
-          '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
-          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
-        '</div>';
-      advSection.innerHTML =
-        '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
-          '<div class="card-title">💸 Advances — ' + label + '</div>' +
-          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
-        '</div>';
-      apprSection.innerHTML =
-        '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
-          '<div class="card-title">💰 ' + label + ' Payout</div>' +
-          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
-        '</div>';
-    }
+    const firstLoad   = apprSection.innerHTML.trim() === '';
 
     const params = new URLSearchParams({ action: 'get_employer_data', date, month, name: DRIVER_NAME });
     fetch(SCRIPT_URL + '?' + params.toString())
       .then(r => r.json())
       .then(data => {
-        renderEmployerView(data.today);
+        renderEmployerHero(data.today);
+        renderKPIStrip(data.monthOT, data.approval);
         const n = new Date();
         document.getElementById('empLastRefreshed').textContent =
           'Last refreshed at ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
-        renderEmployerMTD(data.monthOT, label);
         renderAdvanceSection(data.advances, data.approval.month, label);
         renderMonthApproval(data.approval, label);
       })
       .catch(() => {
-        document.getElementById('empCard').innerHTML =
-          '<div style="text-align:center;padding:20px 0;color:#dc2626;font-weight:600;">⚠️ Could not connect — tap Refresh</div>';
+        document.getElementById('empHeroHeader').innerHTML =
+          '<div class="emp-hero"><div style="text-align:center;padding:20px 0;color:#dc2626;font-weight:600;">⚠️ Could not connect — tap Refresh</div></div>';
         if (firstLoad) {
-          mtdSection.innerHTML =
-            '<div class="info-card accent-indigo" style="margin-top:0;">' +
-              '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
-              '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
-            '</div>';
           advSection.innerHTML =
-            '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
+            '<div class="info-card" style="margin:0;">' +
               '<div class="card-title">💸 Advances — ' + label + '</div>' +
               '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
             '</div>';
           apprSection.innerHTML =
-            '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
+            '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin:0;">' +
               '<div class="card-title">💰 ' + label + ' Payout</div>' +
               '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
             '</div>';
@@ -1287,46 +1302,69 @@
       });
   }
 
-  function renderEmployerView(data) {
-    const card = document.getElementById('empCard');
+  function renderEmployerHero(data) {
+    const header  = document.getElementById('empHeroHeader');
+    const timeStr = pad(new Date().getHours()) + ':' + pad(new Date().getMinutes());
+    let dotClass = '', statusClass = '', statusTxt = '', sinceHtml = '';
+
     if (!data.exists || !data.inTime) {
-      setEmpPill('off', 'Not On Duty');
-      card.innerHTML =
-        '<div style="text-align:center;padding:28px 0;">' +
-        '<div style="font-size:40px;margin-bottom:10px;">🔴</div>' +
-        '<div style="font-size:16px;font-weight:700;color:#64748b;">Not punched in today</div>' +
-        '</div>';
-      return;
-    }
-    const inT = data.inTime, outT = data.outTime;
-    if (outT) {
-      const total = hoursBetween(inT, outT);
-      const { otHours, otPay } = calcOT(total);
-      setEmpPill('done', 'Duty Complete');
-      card.innerHTML =
-        '<div class="card-title">Today\'s Summary</div>' +
-        '<div class="info-row"><span class="lbl">In Time</span><span class="val">' + inT + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Out Time</span><span class="val">' + outT + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Total Hours</span><span class="val">' + fmtHours(total) + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Overtime</span><span class="val ' + (otHours > 0 ? 'orange' : 'muted') + '">' +
-        (otHours > 0 ? fmtHours(otHours) + ' → ₹' + otPay : '—') + '</span></div>';
+      dotClass = 'off'; statusClass = 'off'; statusTxt = 'Not On Duty';
+    } else if (data.outTime) {
+      dotClass = 'done'; statusClass = 'done'; statusTxt = 'Duty Complete';
+      const total = hoursBetween(data.inTime, data.outTime);
+      sinceHtml = '<div class="emp-hero-since">In <span class="accent">' + data.inTime + '</span> · Out <span class="accent">' + data.outTime + '</span> · ' + fmtHours(total) + '</div>';
     } else {
-      const soFar = hoursBetween(inT, timeNow());
-      setEmpPill('on', 'On Duty');
-      card.innerHTML =
-        '<div class="card-title">Live Status</div>' +
-        '<div class="info-row"><span class="lbl">In Time</span><span class="val">' + inT + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Out Time</span><span class="val muted">Not punched out yet</span></div>' +
-        '<div class="info-row"><span class="lbl">Hours so far</span><span class="val">' + fmtHours(soFar) + '</span></div>';
+      dotClass = ''; statusClass = 'on'; statusTxt = 'On Duty';
+      const soFar = hoursBetween(data.inTime, timeNow());
+      sinceHtml = '<div class="emp-hero-since">Since <span class="accent">' + data.inTime + '</span> · ' + fmtHours(soFar) + '</div>';
     }
+
+    header.innerHTML =
+      '<div class="emp-hero">' +
+        '<div class="emp-hero-top">' +
+          '<div>' +
+            '<div class="emp-hero-label">Driver Status</div>' +
+            '<div class="emp-hero-status-row">' +
+              '<div class="emp-pulse-dot ' + dotClass + '"></div>' +
+              '<div class="emp-hero-status-txt ' + statusClass + '">' + statusTxt + '</div>' +
+            '</div>' +
+            '<div class="emp-hero-name">' + DRIVER_NAME + '</div>' +
+            '<div class="emp-hero-car">' +
+              '<span class="emp-hero-car-name">' + CAR_NAME + '</span>' +
+              '<span class="emp-hero-car-sep">·</span>' +
+              '<span class="emp-hero-plate">' + CAR_NUMBER + '</span>' +
+            '</div>' +
+            sinceHtml +
+          '</div>' +
+          '<div class="emp-hero-timebox">' +
+            '<div class="emp-hero-time-lbl">Now</div>' +
+            '<div class="emp-hero-time-val">' + timeStr + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
   }
 
-  function setEmpPill(cls, txt) {
-    const p = document.getElementById('empStatusPill');
-    p.className = 'status-pill ' + cls; p.textContent = txt;
+  function renderKPIStrip(monthOT, approval) {
+    const strip    = document.getElementById('empKPIStrip');
+    const days     = (monthOT && monthOT.totals) ? monthOT.totals.days   : 0;
+    const otPay    = (monthOT && monthOT.totals) ? monthOT.totals.otPay  : 0;
+    const netSalary = approval ? approval.total : (FIXED_SALARY + otPay);
+    strip.innerHTML =
+      '<div class="emp-kpi-tile">' +
+        '<div class="emp-kpi-val">' + days + '</div>' +
+        '<div class="emp-kpi-lbl">Days</div>' +
+      '</div>' +
+      '<div class="emp-kpi-tile">' +
+        '<div class="emp-kpi-val amber">₹' + otPay.toLocaleString('en-IN') + '</div>' +
+        '<div class="emp-kpi-lbl">OT Pay</div>' +
+      '</div>' +
+      '<div class="emp-kpi-tile">' +
+        '<div class="emp-kpi-val green">₹' + netSalary.toLocaleString('en-IN') + '</div>' +
+        '<div class="emp-kpi-lbl">Net Salary</div>' +
+      '</div>';
   }
 
-  // loadEmployerMTD() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
+  // loadEmployerMTD() removed — data is now in the hero header and KPI strip.
 
   // ── Employer: salary advances ──────────────────────────────────
   function renderAdvanceSection(advances, month, label) {
@@ -1343,15 +1381,15 @@
         listHtml +=
           '<div class="info-row">' +
             '<span class="lbl">' + d + '</span>' +
-            '<span class="val" style="color:#dc2626;">−₹' + e.amount.toLocaleString('en-IN') + '</span>' +
+            '<span class="val">₹' + e.amount.toLocaleString('en-IN') + '</span>' +
           '</div>';
       });
     }
 
     const totalRow = total > 0
-      ? '<div class="info-row" style="border-top:2px solid #fecaca;margin-top:6px;padding-top:10px;">' +
+      ? '<div class="info-row" style="border-top:2px solid #f1f5f9;margin-top:6px;padding-top:10px;">' +
           '<span class="lbl" style="font-weight:700;color:#0f172a;">Total Advance</span>' +
-          '<span class="val" style="font-size:18px;font-weight:800;color:#dc2626;">−₹' + total.toLocaleString('en-IN') + '</span>' +
+          '<span class="val" style="font-size:18px;font-weight:800;">₹' + total.toLocaleString('en-IN') + '</span>' +
         '</div>'
       : '';
 
@@ -1393,24 +1431,6 @@
       .finally(() => { input.disabled = false; });
   }
 
-  function renderEmployerMTD(data, label) {
-    const section  = document.getElementById('empMTDSection');
-    const t        = (data && data.totals) ? data.totals : { days: 0, otHours: 0, otPay: 0 };
-    const projected = FIXED_SALARY + (t.otPay || 0);
-    section.innerHTML =
-      '<div class="info-card accent-indigo" style="margin-top:0;">' +
-        '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
-        '<div class="info-row"><span class="lbl">Days Worked</span><span class="val">' + (t.days || 0) + ' days</span></div>' +
-        '<div class="info-row"><span class="lbl">OT Hours</span><span class="val orange">' + (t.otHours > 0 ? fmtHours(t.otHours) : '—') + '</span></div>' +
-        '<div class="info-row"><span class="lbl">OT Pay</span><span class="val orange">' + (t.otPay > 0 ? '₹' + t.otPay : '—') + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Fixed Salary</span><span class="val">₹' + FIXED_SALARY.toLocaleString('en-IN') + '</span></div>' +
-        '<div class="info-row" style="border-top:2px solid #e0e7ff;margin-top:6px;padding-top:12px;">' +
-          '<span class="lbl" style="font-weight:700;color:#0f172a;">Projected Total</span>' +
-          '<span class="val" style="font-size:20px;font-weight:800;color:#15803d;">₹' + projected.toLocaleString('en-IN') + '</span>' +
-        '</div>' +
-      '</div>';
-  }
-
   // loadMonthApproval() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
 
   function renderMonthApproval(data, label) {
@@ -1433,10 +1453,10 @@
         '<div style="display:flex;gap:10px;margin-top:16px;">' +
         '<button onclick="approveMonth(\'approve_month\',\'' + data.month + '\')" ' +
           'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#16a34a,#22c55e);' +
-          'color:white;font-size:15px;font-weight:700;cursor:pointer;">✓ Approve</button>' +
+          'color:white;font-size:15px;font-weight:700;cursor:pointer;">Approve</button>' +
         '<button onclick="approveMonth(\'reject_month\',\'' + data.month + '\')" ' +
           'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);' +
-          'color:white;font-size:15px;font-weight:700;cursor:pointer;">✗ Reject</button>' +
+          'color:white;font-size:15px;font-weight:700;cursor:pointer;">Reject</button>' +
         '</div>';
     } else if (pending && !token) {
       actionHtml = '<div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center;">Add &token=YOUR_TOKEN to URL to enable approval</div>';
