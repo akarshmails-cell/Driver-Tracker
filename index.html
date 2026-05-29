@@ -1249,7 +1249,7 @@
 
   // ── Employer view ─────────────────────────────────────────────
   function initEmployerView() {
-    document.getElementById('driverLabel').textContent = 'Live Status — ' + DRIVER_NAME;
+    document.querySelector('.header').classList.add('hidden');
     document.querySelector('.nav').classList.add('hidden');
     document.getElementById('page-home').classList.remove('active');
     document.getElementById('page-employer').classList.add('active');
@@ -1398,14 +1398,14 @@
         '<div class="card-title">💸 Advances — ' + label + '</div>' +
         listHtml +
         totalRow +
-        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+        '<div style="display:flex;gap:8px;margin-top:14px;min-width:0;">' +
           '<input type="number" id="advanceInput" placeholder="Enter amount (₹)" min="1" ' +
-            'style="flex:1;padding:11px 14px;border:2px solid #e2e8f0;border-radius:12px;' +
-            'font-size:15px;font-weight:700;color:#0f172a;outline:none;" ' +
+            'style="flex:1;min-width:0;padding:11px 12px;border:2px solid #e2e8f0;border-radius:12px;' +
+            'font-size:15px;font-weight:700;color:#0f172a;outline:none;box-sizing:border-box;" ' +
             'onkeydown="if(event.key===\'Enter\')submitAdvance(\'' + month + '\')">' +
           '<button onclick="submitAdvance(\'' + month + '\')" ' +
-            'style="padding:11px 18px;background:#0f172a;color:white;border:none;border-radius:12px;' +
-            'font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Add</button>' +
+            'style="flex-shrink:0;padding:11px 16px;background:#0f172a;color:white;border:none;border-radius:12px;' +
+            'font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Add</button>' +
         '</div>' +
       '</div>';
   }
