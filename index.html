@@ -401,6 +401,10 @@
     <div class="info-row"><span class="lbl">Overtime Hours</span><span class="val orange" id="meOTHrs">--</span></div>
     <div class="info-row"><span class="lbl">Overtime Pay</span><span class="val" id="meOTPay">--</span></div>
     <div class="info-row"><span class="lbl">Fixed Salary</span><span class="val" id="meFixed">--</span></div>
+    <div class="info-row hidden" id="meAdvanceRow">
+      <span class="lbl" style="color:#dc2626;">Advance Given</span>
+      <span class="val" style="color:#dc2626;" id="meAdvance">--</span>
+    </div>
     <div class="info-row total-row">
       <span class="lbl" style="font-weight:700;color:#0f172a">Total Earnings</span>
       <span class="val big-total" id="meTotal">--</span>
@@ -426,6 +430,10 @@
       <div class="info-row"><span class="lbl">Days worked</span><span class="val" id="mtDays">—</span></div>
       <div class="info-row"><span class="lbl">OT this month</span><span class="val orange" id="mtOTHours">—</span></div>
       <div class="info-row"><span class="lbl">OT earnings so far</span><span class="val green" id="mtOTPay">—</span></div>
+      <div class="info-row hidden" id="mtAdvanceRow">
+        <span class="lbl" style="color:#dc2626;">Advance given</span>
+        <span class="val" style="color:#dc2626;" id="mtAdvance">—</span>
+      </div>
     </div>
     <div class="info-card accent-indigo">
       <div class="card-title">📋 Overtime Days</div>
@@ -462,6 +470,7 @@
     <div class="tab-loading">Loading…</div>
   </div>
   <div id="empMTDSection"></div>
+  <div id="empAdvanceSection"></div>
   <div id="empApprovalSection"></div>
   <div style="text-align:center; padding: 0 16px 24px;">
     <div id="empLastRefreshed" style="font-size:12px; color:#94a3b8; margin-bottom:12px;"></div>
@@ -504,6 +513,8 @@
   const MT_TTL = 5 * 60 * 1000;
   // History: cache for entire session (only changes when employer approves)
   let _histCache = null;
+  // Advance: current month's total advance given (0 = none, shown to driver only if > 0)
+  let _advanceCache = 0;
 
   (function init() {
     const params = new URLSearchParams(window.location.search);
@@ -997,8 +1008,9 @@
     fetch(SCRIPT_URL + '?' + params.toString())
       .then(r => r.json())
       .then(data => {
-        if (data.monthOT) { _mtCache = data.monthOT; _mtCacheTime = Date.now(); }
-        if (data.history) { _histCache = data.history.months || []; }
+        if (data.monthOT)              { _mtCache = data.monthOT; _mtCacheTime = Date.now(); }
+        if (data.history)              { _histCache = data.history.months || []; }
+        if (data.advance !== undefined){ _advanceCache = data.advance; }
       })
       .catch(() => {}); // silent — individual tab fetches are the fallback
   }
@@ -1044,6 +1056,14 @@
     document.getElementById('mtDays').textContent    = t.days + (t.days === 1 ? ' day' : ' days');
     document.getElementById('mtOTHours').textContent = t.otHours > 0 ? fmtHours(t.otHours) : '—';
     document.getElementById('mtOTPay').textContent   = t.otPay.toLocaleString('en-IN');
+    // Show advance row only if an advance has been given this month
+    const advRow = document.getElementById('mtAdvanceRow');
+    if (_advanceCache > 0) {
+      document.getElementById('mtAdvance').textContent = '−₹' + _advanceCache.toLocaleString('en-IN');
+      advRow.classList.remove('hidden');
+    } else {
+      advRow.classList.add('hidden');
+    }
     const tableEl = document.getElementById('mtOTTable');
     if (!data.days || data.days.length === 0) {
       tableEl.innerHTML = '<div class="tab-empty">No overtime days this month yet.</div>';
@@ -1210,6 +1230,7 @@
     const month  = date.substring(0, 7);
     const label  = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     const mtdSection  = document.getElementById('empMTDSection');
+    const advSection  = document.getElementById('empAdvanceSection');
     const apprSection = document.getElementById('empApprovalSection');
     const firstLoad   = mtdSection.innerHTML.trim() === '' || apprSection.innerHTML.trim() === '';
 
@@ -1217,6 +1238,11 @@
       mtdSection.innerHTML =
         '<div class="info-card accent-indigo" style="margin-top:0;">' +
           '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
+          '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
+        '</div>';
+      advSection.innerHTML =
+        '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
+          '<div class="card-title">💸 Advances — ' + label + '</div>' +
           '<div style="text-align:center;padding:16px 0;color:#94a3b8;font-size:14px;">Loading…</div>' +
         '</div>';
       apprSection.innerHTML =
@@ -1235,6 +1261,7 @@
         document.getElementById('empLastRefreshed').textContent =
           'Last refreshed at ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
         renderEmployerMTD(data.monthOT, label);
+        renderAdvanceSection(data.advances, data.approval.month, label);
         renderMonthApproval(data.approval, label);
       })
       .catch(() => {
@@ -1244,6 +1271,11 @@
           mtdSection.innerHTML =
             '<div class="info-card accent-indigo" style="margin-top:0;">' +
               '<div class="card-title">📋 ' + label + ' — Month So Far</div>' +
+              '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
+            '</div>';
+          advSection.innerHTML =
+            '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
+              '<div class="card-title">💸 Advances — ' + label + '</div>' +
               '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
             '</div>';
           apprSection.innerHTML =
@@ -1295,6 +1327,70 @@
   }
 
   // loadEmployerMTD() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
+
+  // ── Employer: salary advances ──────────────────────────────────
+  function renderAdvanceSection(advances, month, label) {
+    const section  = document.getElementById('empAdvanceSection');
+    const entries  = (advances && advances.entries) ? advances.entries : [];
+    const total    = (advances && advances.total)   ? advances.total   : 0;
+
+    let listHtml = '';
+    if (entries.length === 0) {
+      listHtml = '<div style="font-size:13px;color:#94a3b8;padding:8px 0;">No advances given this month.</div>';
+    } else {
+      entries.forEach(e => {
+        const d = new Date(e.date + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        listHtml +=
+          '<div class="info-row">' +
+            '<span class="lbl">' + d + '</span>' +
+            '<span class="val" style="color:#dc2626;">−₹' + e.amount.toLocaleString('en-IN') + '</span>' +
+          '</div>';
+      });
+    }
+
+    const totalRow = total > 0
+      ? '<div class="info-row" style="border-top:2px solid #fecaca;margin-top:6px;padding-top:10px;">' +
+          '<span class="lbl" style="font-weight:700;color:#0f172a;">Total Advance</span>' +
+          '<span class="val" style="font-size:18px;font-weight:800;color:#dc2626;">−₹' + total.toLocaleString('en-IN') + '</span>' +
+        '</div>'
+      : '';
+
+    section.innerHTML =
+      '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
+        '<div class="card-title">💸 Advances — ' + label + '</div>' +
+        listHtml +
+        totalRow +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+          '<input type="number" id="advanceInput" placeholder="Enter amount (₹)" min="1" ' +
+            'style="flex:1;padding:11px 14px;border:2px solid #e2e8f0;border-radius:12px;' +
+            'font-size:15px;font-weight:700;color:#0f172a;outline:none;" ' +
+            'onkeydown="if(event.key===\'Enter\')submitAdvance(\'' + month + '\')">' +
+          '<button onclick="submitAdvance(\'' + month + '\')" ' +
+            'style="padding:11px 18px;background:#0f172a;color:white;border:none;border-radius:12px;' +
+            'font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Add</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function submitAdvance(month) {
+    const input  = document.getElementById('advanceInput');
+    const amount = parseFloat(input.value);
+    if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    const date   = todayStr();
+    const params = new URLSearchParams({ action: 'add_advance', month, date, amount });
+    input.disabled = true;
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        input.value = '';
+        loadEmployerData(); // refresh all sections so totals update
+      })
+      .catch(() => {
+        alert('Could not save advance — please check your connection and try again.');
+      })
+      .finally(() => { input.disabled = false; });
+  }
 
   function renderEmployerMTD(data, label) {
     const section  = document.getElementById('empMTDSection');
@@ -1366,9 +1462,12 @@
         '<div class="info-row"><span class="lbl">Days Worked</span><span class="val">' + data.days + ' days</span></div>' +
         '<div class="info-row"><span class="lbl">OT Hours</span><span class="val orange">' + (data.otHours > 0 ? fmtHours(data.otHours) : '—') + '</span></div>' +
         '<div class="info-row"><span class="lbl">OT Pay</span><span class="val orange">' + (data.otPay > 0 ? '₹' + data.otPay : '—') + '</span></div>' +
-        '<div class="info-row"><span class="lbl">Fixed Salary</span><span class="val">₹' + data.fixed.toLocaleString('en-IN') + '</span></div>' +
+        '<div class="info-row"><span class="lbl">Fixed Salary</span><span class="val">₹' + (data.fixed || FIXED_SALARY).toLocaleString('en-IN') + '</span></div>' +
+        (data.advance > 0
+          ? '<div class="info-row"><span class="lbl" style="color:#dc2626;">Advance Given</span><span class="val" style="color:#dc2626;">−₹' + data.advance.toLocaleString('en-IN') + '</span></div>'
+          : '') +
         '<div class="info-row" style="border-top:2px solid #fde68a;margin-top:6px;padding-top:12px;">' +
-          '<span class="lbl" style="font-weight:700;color:#0f172a;">Total Payout</span>' +
+          '<span class="lbl" style="font-weight:700;color:#0f172a;">Net Payout</span>' +
           '<span class="val" style="font-size:22px;font-weight:800;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
         '</div>' +
         actionHtml +
@@ -1396,6 +1495,16 @@
     document.getElementById('meOTHrs').textContent = data.otHours > 0 ? fmtHours(data.otHours) : '—';
     document.getElementById('meOTPay').textContent = '₹' + data.otPay.toLocaleString('en-IN');
     document.getElementById('meFixed').textContent = '₹' + FIXED_SALARY.toLocaleString('en-IN');
+    // Show advance deduction row if applicable
+    const advRow = document.getElementById('meAdvanceRow');
+    if (advRow) {
+      if (data.advance > 0) {
+        document.getElementById('meAdvance').textContent = '−₹' + data.advance.toLocaleString('en-IN');
+        advRow.classList.remove('hidden');
+      } else {
+        advRow.classList.add('hidden');
+      }
+    }
     document.getElementById('meTotal').textContent = '₹' + data.total.toLocaleString('en-IN');
   }
 </script>
