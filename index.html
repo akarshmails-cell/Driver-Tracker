@@ -496,7 +496,7 @@
 
 <script>
   // ─────────────────────────────────────────────────────────────
-  const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwfXOZUUUrY7ZzyqO1aOPcY7cVlGLiE4wc4vusRfBmGpERzqNSFjf-E1K9m6Et1ZeQR/exec';
+  const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbyTWhTEbAcA357DDf-m9qraeBnNXO1gDKZwPL9fUFosED-IB9iszjvq0cY7bvzuGXzV/exec';
   const DRIVER_NAME    = 'Nikhil Pujari';
   const OT_AFTER       = 10;
   const OT_RATE        = 75;
@@ -1386,8 +1386,9 @@
         input.value = '';
         loadEmployerData(); // refresh all sections so totals update
       })
-      .catch(() => {
-        alert('Could not save advance — please check your connection and try again.');
+      .catch(err => {
+        const detail = (err && err.message) ? err.message : 'Unknown error';
+        alert('Could not save advance.\n\nReason: ' + detail + '\n\nIf this says "Unknown action", open Apps Script → Deploy → Manage deployments and update the existing deployment (do not create a new one).');
       })
       .finally(() => { input.disabled = false; });
   }
