@@ -278,12 +278,19 @@
     .emp-kpi-lbl { font-size: 9px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
 
     /* ── Employer: compact spacing overrides ───────────────────── */
-    .emp-hero { padding: 32px 20px 20px; }
-    .emp-kpi-tile { padding: 10px 8px; }
-    .emp-kpi-val { font-size: 16px; margin-bottom: 3px; }
-    #page-employer .info-card { padding: 12px 16px; margin-bottom: 0; }
-    #page-employer .card-title { margin-bottom: 8px; }
-    #page-employer .info-row { padding: 6px 0; }
+    .emp-hero { padding: 26px 20px 14px; }
+    .emp-hero-name { margin-top: 3px; }
+    .emp-hero-car { margin-top: 3px; }
+    .emp-hero-since { margin-top: 5px; }
+    .emp-kpi-strip { margin-top: -14px; }
+    .emp-kpi-tile { padding: 8px 6px; }
+    .emp-kpi-val { font-size: 15px; margin-bottom: 2px; }
+    .emp-kpi-lbl { font-size: 8px; }
+    #page-employer .info-card { padding: 10px 14px; margin-bottom: 0; }
+    #page-employer .card-title { margin-bottom: 6px; font-size: 10px; }
+    #page-employer .info-row { padding: 4px 0; }
+    #page-employer .info-row .lbl { font-size: 13px; }
+    #page-employer .info-row .val { font-size: 13px; }
   </style>
 </head>
 <body>
@@ -515,7 +522,7 @@
     </div>
   </div>
   <div id="empKPIStrip" class="emp-kpi-strip"></div>
-  <div style="padding: 10px 16px 0; display:flex; flex-direction:column; gap:8px;">
+  <div style="padding: 8px 16px 0; display:flex; flex-direction:column; gap:6px;">
     <div id="empAdvanceSection"></div>
     <div id="empApprovalSection"></div>
   </div>
@@ -1461,10 +1468,10 @@
         '<div style="display:flex;gap:10px;margin-top:16px;">' +
         '<button onclick="approveMonth(\'approve_month\',\'' + data.month + '\')" ' +
           'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#16a34a,#22c55e);' +
-          'color:white;font-size:15px;font-weight:700;cursor:pointer;">Approve</button>' +
+          'color:white;font-size:14px;font-weight:700;cursor:pointer;">Approve</button>' +
         '<button onclick="approveMonth(\'reject_month\',\'' + data.month + '\')" ' +
-          'style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);' +
-          'color:white;font-size:15px;font-weight:700;cursor:pointer;">Reject</button>' +
+          'style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);' +
+          'color:white;font-size:14px;font-weight:700;cursor:pointer;">Reject</button>' +
         '</div>';
     } else if (pending && !token) {
       actionHtml = '<div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center;">Add &token=YOUR_TOKEN to URL to enable approval</div>';
@@ -1495,9 +1502,9 @@
         (data.advance > 0
           ? '<div class="info-row"><span class="lbl" style="color:#dc2626;">Advance Given</span><span class="val" style="color:#dc2626;">−₹' + data.advance.toLocaleString('en-IN') + '</span></div>'
           : '') +
-        '<div class="info-row" style="border-top:2px solid #fde68a;margin-top:6px;padding-top:12px;">' +
+        '<div class="info-row" style="border-top:2px solid #fde68a;margin-top:4px;padding-top:8px;">' +
           '<span class="lbl" style="font-weight:700;color:#0f172a;">Net Payout</span>' +
-          '<span class="val" style="font-size:22px;font-weight:800;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
+          '<span class="val" style="font-size:18px;font-weight:800;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
         '</div>' +
         actionHtml +
         gpayHtml +
