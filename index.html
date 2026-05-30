@@ -278,7 +278,7 @@
     .emp-kpi-lbl { font-size: 9px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
 
     /* ── Employer: compact spacing overrides ───────────────────── */
-    .emp-hero { padding: 26px 20px 14px; }
+    .emp-hero { padding: 26px 20px 24px; }
     .emp-hero-name { margin-top: 3px; }
     .emp-hero-car { margin-top: 3px; }
     .emp-hero-since { margin-top: 5px; }
@@ -1402,9 +1402,9 @@
     }
 
     const totalRow = total > 0
-      ? '<div class="info-row" style="border-top:2px solid #f1f5f9;margin-top:6px;padding-top:10px;">' +
+      ? '<div class="info-row" style="border-top:1px solid #f1f5f9;margin-top:4px;padding-top:6px;">' +
           '<span class="lbl" style="font-weight:700;color:#0f172a;">Total Advance</span>' +
-          '<span class="val" style="font-size:18px;font-weight:800;">₹' + total.toLocaleString('en-IN') + '</span>' +
+          '<span class="val" style="font-size:13px;font-weight:700;">₹' + total.toLocaleString('en-IN') + '</span>' +
         '</div>'
       : '';
 
@@ -1504,7 +1504,7 @@
           : '') +
         '<div class="info-row" style="border-top:2px solid #fde68a;margin-top:4px;padding-top:8px;">' +
           '<span class="lbl" style="font-weight:700;color:#0f172a;">Net Payout</span>' +
-          '<span class="val" style="font-size:18px;font-weight:800;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
+          '<span class="val" style="font-size:13px;font-weight:700;color:#15803d;">₹' + data.total.toLocaleString('en-IN') + '</span>' +
         '</div>' +
         actionHtml +
         gpayHtml +
