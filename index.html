@@ -237,6 +237,18 @@
 
     .hidden { display: none !important; }
 
+    /* ── Toast notification ─────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(12px);
+      background: #0f172a; color: white; padding: 11px 20px; border-radius: 12px;
+      font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0;
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+      white-space: nowrap; max-width: 300px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .toast.error   { background: #dc2626; }
+    .toast.success { background: #15803d; }
+    .toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* ── Employer: Redesigned View ─────────────────────────────── */
     .emp-hero {
       background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
@@ -548,6 +560,8 @@
   </button>
 </nav>
 
+<div class="toast" id="toast"></div>
+
 <script>
   // ─────────────────────────────────────────────────────────────
   const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbyTWhTEbAcA357DDf-m9qraeBnNXO1gDKZwPL9fUFosED-IB9iszjvq0cY7bvzuGXzV/exec';
@@ -562,6 +576,17 @@
   // ─────────────────────────────────────────────────────────────
 
   let liveTimer;
+  let _empInterval = null;
+  let _toastTimer;
+
+  // ── toast ─────────────────────────────────────────────────────
+  function showToast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.className = 'toast'; }, 3000);
+  }
 
   // ── tab data cache ────────────────────────────────────────────
   // This Month: cache for 5 min; invalidated on any punch-out
@@ -846,6 +871,9 @@
   function reconcileWithServer() {
     const punchIn   = localStorage.getItem('punchIn');
     const punchDate = localStorage.getItem('punchDate');
+    const queue     = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+    // Common case: local punch data exists and sync queue is empty → sync was clean, skip
+    if (punchIn && punchDate && queue.length === 0) return;
 
     if (punchIn && punchDate) {
       // Have local punch data — confirm server agrees; re-sync silently if it doesn't
@@ -1001,7 +1029,7 @@
     const punchDate = localStorage.getItem('punchDate');
     const punchIn   = localStorage.getItem('punchIn');
     const outT      = document.getElementById('forgotOutTime').value;
-    if (!outT) { alert('Please select a time.'); return; }
+    if (!outT) { showToast('Please select a time', 'error'); return; }
     const total = hoursBetween(punchIn, outT);
     const { otHours, otPay } = calcOT(total);
     const d = new Date(punchDate + 'T12:00:00');
@@ -1270,16 +1298,34 @@
     document.getElementById('page-employer').classList.add('active');
     startClock();
     refreshEmployerView();
-    setInterval(refreshEmployerView, 60000); // auto-refresh every minute
+    setEmployerRefreshRate(false); // start slow; first load will set correct rate
+    // Pause refreshes when screen is off or user switches apps — resumes on return
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearInterval(_empInterval);
+      } else {
+        refreshEmployerView();
+      }
+    });
+  }
+
+  // 60s when on duty (live hours matter), 3 min when not (nothing changes)
+  function setEmployerRefreshRate(isOnDuty) {
+    clearInterval(_empInterval);
+    _empInterval = setInterval(refreshEmployerView, isOnDuty ? 60000 : 3 * 60000);
   }
 
   function refreshEmployerView() {
-    loadEmployerData();
+    const btn = document.querySelector('button[onclick="refreshEmployerView()"]');
+    if (btn) { btn.textContent = '↻ Refreshing…'; btn.disabled = true; btn.style.opacity = '0.5'; }
+    loadEmployerData(function() {
+      if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.style.opacity = '1'; }
+    });
   }
 
   // Single fetch replaces get_today + get_month_ot + get_month_summary.
   // Server reads each sheet once; client makes one HTTP round-trip instead of three.
-  function loadEmployerData() {
+  function loadEmployerData(onDone) {
     const date   = todayStr();
     const month  = date.substring(0, 7);
     const label  = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
@@ -1298,6 +1344,7 @@
           'Last refreshed at ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
         renderAdvanceSection(data.advances, data.approval.month, label);
         renderMonthApproval(data.approval, label);
+        if (onDone) onDone();
       })
       .catch(() => {
         document.getElementById('empHeroHeader').innerHTML =
@@ -1314,6 +1361,9 @@
               '<div style="text-align:center;padding:12px 0;color:#dc2626;font-size:13px;font-weight:600;">⚠️ Could not load</div>' +
             '</div>';
         }
+        if (onDone) onDone();
+        // Restart interval in case it was cleared (e.g. screen lock during load)
+        if (_empInterval === null) setEmployerRefreshRate(false);
       });
   }
 
@@ -1333,6 +1383,9 @@
       const soFar = hoursBetween(data.inTime, timeNow());
       sinceHtml = '<div class="emp-hero-since">Since <span class="accent">' + data.inTime + '</span> · ' + fmtHours(soFar) + '</div>';
     }
+
+    // Update refresh rate based on current duty status
+    setEmployerRefreshRate(!data.exists || !data.inTime ? false : !data.outTime);
 
     header.innerHTML =
       '<div class="emp-hero">' +
@@ -1432,7 +1485,7 @@
   function submitAdvance(month) {
     const input  = document.getElementById('advanceInput');
     const amount = parseFloat(input.value);
-    if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+    if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'error'); return; }
     const date   = todayStr();
     const params = new URLSearchParams({ action: 'add_advance', month, date, amount });
     input.disabled = true;
@@ -1441,17 +1494,19 @@
       .then(d => {
         if (!d || d.error) throw new Error(d && d.error || 'Server error');
         input.value = '';
-        loadEmployerData(); // refresh all sections so totals update
+        showToast('Advance saved', 'success');
+        loadEmployerData();
       })
       .catch(err => {
         const detail = (err && err.message) ? err.message : 'Unknown error';
-        alert('Could not save advance.\n\nReason: ' + detail + '\n\nIf this says "Unknown action", open Apps Script → Deploy → Manage deployments and update the existing deployment (do not create a new one).');
+        showToast('Could not save advance: ' + detail, 'error');
       })
       .finally(() => { input.disabled = false; });
   }
 
   function markAsPaid(month) {
-    if (!confirm('Mark ' + month + ' salary as paid?')) return;
+    const monthLabel = new Date(month + '-01T12:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    if (!confirm('Mark ' + monthLabel + ' salary as paid?')) return;
     const token  = new URLSearchParams(window.location.search).get('token') || '';
     const params = new URLSearchParams({ action: 'mark_paid', month, token });
     const btns   = document.getElementById('empApprovalSection').querySelectorAll('button');
@@ -1462,7 +1517,7 @@
         if (!d || d.error) throw new Error(d && d.error || 'Server error');
         loadEmployerData();
       })
-      .catch(err => { loadEmployerData(); alert('Could not save: ' + (err && err.message ? err.message : 'Unknown error')); });
+      .catch(err => { loadEmployerData(); showToast('Could not save: ' + (err && err.message ? err.message : 'Unknown error'), 'error'); });
   }
 
   function deleteAdvanceEntry(row, month) {
@@ -1472,9 +1527,10 @@
       .then(r => r.json())
       .then(d => {
         if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        showToast('Entry deleted', 'success');
         loadEmployerData();
       })
-      .catch(() => alert('Could not delete — please try again.'));
+      .catch(() => showToast('Could not delete — please try again', 'error'));
   }
 
   // loadMonthApproval() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
@@ -1551,9 +1607,9 @@
       .then(r => r.json())
       .then(data => {
         if (data.ok) loadEmployerData();
-        else { loadEmployerData(); alert('Error: ' + (data.error || 'Something went wrong')); }
+        else { loadEmployerData(); showToast(data.error || 'Something went wrong', 'error'); }
       })
-      .catch(() => { loadEmployerData(); alert('Could not connect. Please try again.'); });
+      .catch(() => { loadEmployerData(); showToast('Could not connect — please try again', 'error'); });
   }
 
   function renderApprovedEarnings(data) {
@@ -1561,7 +1617,7 @@
     document.getElementById('meDays').textContent  = data.days + (data.days === 1 ? ' day' : ' days');
     document.getElementById('meOTHrs').textContent = data.otHours > 0 ? fmtHours(data.otHours) : '—';
     document.getElementById('meOTPay').textContent = '₹' + data.otPay.toLocaleString('en-IN');
-    document.getElementById('meFixed').textContent = '₹' + FIXED_SALARY.toLocaleString('en-IN');
+    document.getElementById('meFixed').textContent = '₹' + (data.fixed || FIXED_SALARY).toLocaleString('en-IN');
     // Show advance deduction row if applicable
     const advRow = document.getElementById('meAdvanceRow');
     if (advRow) {
