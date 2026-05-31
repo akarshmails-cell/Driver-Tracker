@@ -1396,7 +1396,11 @@
         listHtml +=
           '<div class="info-row">' +
             '<span class="lbl">' + d + '</span>' +
-            '<span class="val">₹' + e.amount.toLocaleString('en-IN') + '</span>' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<span class="val">₹' + e.amount.toLocaleString('en-IN') + '</span>' +
+              '<button onclick="deleteAdvanceEntry(' + e.row + ',\'' + month + '\')" ' +
+                'style="background:#f1f5f9;border:none;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;padding:3px 7px;border-radius:6px;line-height:1;flex-shrink:0;">✕</button>' +
+            '</div>' +
           '</div>';
       });
     }
@@ -1444,6 +1448,18 @@
         alert('Could not save advance.\n\nReason: ' + detail + '\n\nIf this says "Unknown action", open Apps Script → Deploy → Manage deployments and update the existing deployment (do not create a new one).');
       })
       .finally(() => { input.disabled = false; });
+  }
+
+  function deleteAdvanceEntry(row, month) {
+    if (!confirm('Remove this advance entry?')) return;
+    const params = new URLSearchParams({ action: 'delete_advance', row });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        loadEmployerData();
+      })
+      .catch(() => alert('Could not delete — please try again.'));
   }
 
   // loadMonthApproval() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
