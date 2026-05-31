@@ -1495,7 +1495,7 @@
 
     // Google Pay button — only shown after approval
     const gpayHtml = approved
-      ? '<a href="upi://pay?pa=nikhilpujari1991%40okicici&pn=Nikhil%20Pujari&am=' + data.total + '&cu=INR&tn=' + encodeURIComponent(label + ' Salary') + '" ' +
+      ? '<a href="tez://upi/pay?pa=nikhilpujari1991%40okicici&pn=Nikhil%20Pujari&am=' + data.total + '&cu=INR&tn=' + encodeURIComponent(label + ' Salary') + '" ' +
         'style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;' +
         'background:white;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px 20px;' +
         'text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.10);">' +
@@ -1531,14 +1531,17 @@
     const token  = new URLSearchParams(window.location.search).get('token') || '';
     const label  = action === 'approve_month' ? 'Approve' : 'Reject';
     if (!confirm(label + ' ' + month + ' salary payout?')) return;
+    // Give immediate feedback — disable buttons so it's clear it's processing
+    const btns = document.getElementById('empApprovalSection').querySelectorAll('button');
+    btns.forEach(b => { b.disabled = true; b.textContent = 'Processing…'; b.style.opacity = '0.5'; });
     const params = new URLSearchParams({ action, month, token, format: 'json' });
     fetch(SCRIPT_URL + '?' + params.toString())
       .then(r => r.json())
       .then(data => {
         if (data.ok) loadEmployerData();
-        else alert('Error: ' + (data.error || 'Something went wrong'));
+        else { loadEmployerData(); alert('Error: ' + (data.error || 'Something went wrong')); }
       })
-      .catch(() => alert('Could not connect. Please try again.'));
+      .catch(() => { loadEmployerData(); alert('Could not connect. Please try again.'); });
   }
 
   function renderApprovedEarnings(data) {
