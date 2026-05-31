@@ -1462,7 +1462,7 @@
         if (!d || d.error) throw new Error(d && d.error || 'Server error');
         loadEmployerData();
       })
-      .catch(() => { loadEmployerData(); alert('Could not save — please try again.'); });
+      .catch(err => { loadEmployerData(); alert('Could not save: ' + (err && err.message ? err.message : 'Unknown error')); });
   }
 
   function deleteAdvanceEntry(row, month) {
