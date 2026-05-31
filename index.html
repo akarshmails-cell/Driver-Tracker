@@ -1450,6 +1450,21 @@
       .finally(() => { input.disabled = false; });
   }
 
+  function markAsPaid(month) {
+    if (!confirm('Mark ' + month + ' salary as paid?')) return;
+    const token  = new URLSearchParams(window.location.search).get('token') || '';
+    const params = new URLSearchParams({ action: 'mark_paid', month, token });
+    const btns   = document.getElementById('empApprovalSection').querySelectorAll('button');
+    btns.forEach(b => { b.disabled = true; b.textContent = 'Saving…'; b.style.opacity = '0.5'; });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        loadEmployerData();
+      })
+      .catch(() => { loadEmployerData(); alert('Could not save — please try again.'); });
+  }
+
   function deleteAdvanceEntry(row, month) {
     if (!confirm('Remove this advance entry?')) return;
     const params = new URLSearchParams({ action: 'delete_advance', row });
@@ -1469,15 +1484,17 @@
     const token    = new URLSearchParams(window.location.search).get('token') || '';
     const approved = data.status === 'Approved';
     const rejected = data.status === 'Rejected';
-    const pending  = !approved && !rejected;
+    const paid     = data.status === 'Paid';
+    const pending  = !approved && !rejected && !paid;
 
     // Status badge
     let badge = '';
+    if (paid)     badge = '<span style="font-size:12px;font-weight:700;color:#15803d;background:#dcfce7;padding:4px 10px;border-radius:20px;">✓ Paid</span>';
     if (approved) badge = '<span style="font-size:12px;font-weight:700;color:#15803d;background:#dcfce7;padding:4px 10px;border-radius:20px;">✓ Approved</span>';
     if (rejected) badge = '<span style="font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2;padding:4px 10px;border-radius:20px;">✗ Rejected</span>';
     if (pending)  badge = '<span style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;padding:4px 10px;border-radius:20px;">Pending</span>';
 
-    // Approve / Reject buttons — only if token is in URL
+    // Action buttons
     let actionHtml = '';
     if (pending && token) {
       actionHtml =
@@ -1489,19 +1506,16 @@
           'style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);' +
           'color:white;font-size:14px;font-weight:700;cursor:pointer;">Reject</button>' +
         '</div>';
+    } else if (approved && token) {
+      actionHtml =
+        '<button onclick="markAsPaid(\'' + data.month + '\')" ' +
+          'style="width:100%;margin-top:14px;padding:12px;border:none;border-radius:12px;' +
+          'background:#0f172a;color:white;font-size:14px;font-weight:700;cursor:pointer;">Mark as Paid</button>';
     } else if (pending && !token) {
       actionHtml = '<div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center;">Add &token=YOUR_TOKEN to URL to enable approval</div>';
     }
 
-    // Google Pay button — only shown after approval
-    const gpayHtml = approved
-      ? '<a href="tez://upi/pay?pa=nikhilpujari1991%40okicici&pn=Nikhil%20Pujari&am=' + data.total + '&cu=INR&tn=' + encodeURIComponent(label + ' Salary') + '" ' +
-        'style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;' +
-        'background:white;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px 20px;' +
-        'text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.10);">' +
-        '<span style="font-size:14px;font-weight:800;color:#0f172a;">Pay ₹' + data.total.toLocaleString('en-IN') + ' via Google Pay</span>' +
-        '</a>'
-      : '';
+    const gpayHtml = '';
 
     section.innerHTML =
       '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
