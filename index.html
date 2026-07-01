@@ -249,6 +249,86 @@
     .toast.success { background: #15803d; }
     .toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── Time-edit pending note (driver states) ─────────────────── */
+    .edit-pending-note {
+      margin-top: 10px; background: #fef3c7; color: #92400e;
+      border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── Edit-blocked card (new day, previous edit awaiting approval) ── */
+    .edit-block-card {
+      background: linear-gradient(135deg,#fffbeb,#fef3c7);
+      border: 1.5px solid #fcd34d; border-radius: 18px;
+      padding: 22px 18px; text-align: center; margin: 0 2px;
+    }
+    .edit-block-card .lock { font-size: 30px; }
+    .edit-block-card .t { font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 8px; }
+    .edit-block-card .s { font-size: 13px; color: #92400e; margin-top: 6px; line-height: 1.45; }
+
+    /* ── Edit modal ─────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 10000;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-card {
+      background: white; border-radius: 20px; padding: 22px 20px; width: 100%; max-width: 320px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .modal-card .m-title { font-size: 17px; font-weight: 800; color: #0f172a; }
+    .modal-card .m-sub { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.45; }
+    .modal-field { margin-top: 16px; }
+    .modal-field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
+    .modal-field input[type=time] {
+      width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 12px;
+      font-size: 18px; font-weight: 700; color: #0f172a; font-family: inherit;
+    }
+    .modal-preview {
+      margin-top: 16px; background: #f8fafc; border-radius: 12px; padding: 10px 14px;
+      font-size: 13px; color: #475569; font-weight: 600; text-align: center;
+    }
+    .modal-preview .ot { color: #ea580c; font-weight: 800; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-btns button {
+      flex: 1; padding: 14px 12px; border: none; border-radius: 14px;
+      font-size: 14px; font-weight: 800; cursor: pointer; letter-spacing: 0.2px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .modal-btns button:active { transform: scale(0.97); }
+    .modal-btns .cancel {
+      flex: 0 0 34%; background: #fff; color: #64748b; border: 1.5px solid #e2e8f0;
+    }
+    .modal-btns .cancel:active { background: #f8fafc; }
+    .modal-btns .submit {
+      background: linear-gradient(135deg,#0f172a,#334155); color: #fff;
+      box-shadow: 0 6px 16px rgba(15,23,42,0.28);
+    }
+    .modal-btns .submit:active { box-shadow: 0 3px 8px rgba(15,23,42,0.28); }
+
+    /* ── Employer: approve / reject edit ────────────────────────── */
+    .edit-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .edit-actions button {
+      padding: 14px 12px; border: none; border-radius: 14px;
+      font-size: 14px; font-weight: 800; cursor: pointer; letter-spacing: 0.2px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .edit-actions button:active { transform: scale(0.97); }
+    .edit-actions button span { font-size: 15px; line-height: 1; }
+    .edit-actions .ea-approve {
+      flex: 1.6; color: #fff; background: linear-gradient(135deg,#15803d,#22c55e);
+      box-shadow: 0 6px 16px rgba(21,128,61,0.30);
+    }
+    .edit-actions .ea-approve:active { box-shadow: 0 3px 8px rgba(21,128,61,0.30); }
+    .edit-actions .ea-reject {
+      flex: 1; color: #dc2626; background: #fff; border: 1.5px solid #fecaca;
+    }
+    .edit-actions .ea-reject:active { background: #fef2f2; }
+
     /* ── Employer: Redesigned View ─────────────────────────────── */
     .emp-hero {
       background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
@@ -322,12 +402,20 @@
 
 <!-- STATE 1: Nothing set yet -->
 <div id="freshState">
-  <div class="btn-wrap">
+  <div class="btn-wrap" id="freshPunchWrap">
     <button class="punch-btn btn-start" onclick="confirmSetInTime()">
       <span class="icon">▶</span>
       <span class="label">Set In-Time</span>
       <span class="sub">Tap to mark your arrival</span>
     </button>
+  </div>
+  <!-- Shown instead of the punch button when a time edit is awaiting approval -->
+  <div class="btn-wrap hidden" id="editBlockWrap">
+    <div class="edit-block-card">
+      <div class="lock">⏳</div>
+      <div class="t">Time edit awaiting approval</div>
+      <div class="s" id="editBlockSub">Your correction has been sent to your employer. You can start today's duty once it's approved.</div>
+    </div>
   </div>
 </div>
 
@@ -335,16 +423,16 @@
 <div id="onDutyState" class="hidden">
   <div class="info-card card-on">
     <div class="card-title">On Duty</div>
-    <div class="editable-row">
+    <div class="info-row">
       <span class="lbl">In Time</span>
       <span class="val" id="onDutyInTime">--</span>
-      <button class="edit-btn" id="editInBtn" onclick="editInTime()">✏ Edit</button>
     </div>
     <div class="info-row">
       <span class="lbl">Hours so far</span>
       <span class="val" id="liveHours">--</span>
     </div>
     <div id="overnightNote" class="overnight-note hidden"></div>
+    <div class="edit-hint" style="margin-top:10px;font-size:11px;color:#94a3b8;">You can correct your times after ending duty.</div>
   </div>
   <div class="btn-wrap">
     <button class="punch-btn btn-end" onclick="confirmSetOutTime()">
@@ -359,14 +447,15 @@
 <div id="doneState" class="hidden">
   <div class="info-card card-done">
     <div class="card-title">Duty Summary</div>
-    <div class="info-row">
+    <div class="editable-row">
       <span class="lbl">In Time</span>
       <span class="val" id="doneInTime">--</span>
+      <button class="edit-btn" id="editInBtn" onclick="openEditModal('in')">✏ Edit</button>
     </div>
     <div class="editable-row">
       <span class="lbl">Out Time</span>
       <span class="val" id="doneOutTime">--</span>
-      <button class="edit-btn" id="editOutBtn" onclick="editOutTime()">✏ Edit</button>
+      <button class="edit-btn" id="editOutBtn" onclick="openEditModal('out')">✏ Edit</button>
     </div>
     <div class="info-row">
       <span class="lbl">Total Hours</span>
@@ -380,6 +469,7 @@
       <span class="lbl">Overtime Pay</span>
       <span class="val green" id="doneOTPay">--</span>
     </div>
+    <div id="pendingNoteDone" class="edit-pending-note hidden">⏳ Time edit awaiting employer approval</div>
   </div>
 </div>
 
@@ -521,16 +611,7 @@
 <div class="page" id="page-history">
   <div id="histLoading" class="tab-loading" style="margin-top:40px;">Loading…</div>
   <div id="histData" class="hidden">
-    <div class="info-card accent-sky" style="margin-top:16px;">
-      <div class="card-title">🏦 Salary History</div>
-      <div class="tbl-head" style="grid-template-columns:1fr 66px 44px 70px;">
-        <span>Month</span>
-        <span class="ta-right">Fixed</span>
-        <span class="ta-right">OT</span>
-        <span class="ta-right">Total</span>
-      </div>
-      <div id="histTable"></div>
-    </div>
+    <div id="histTable" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -543,6 +624,8 @@
   </div>
   <div id="empKPIStrip" class="emp-kpi-strip"></div>
   <div style="padding: 8px 16px 0; display:flex; flex-direction:column; gap:6px;">
+    <div id="empEditSection"></div>
+    <div id="empPendingSection"></div>
     <div id="empAdvanceSection"></div>
     <div id="empApprovalSection"></div>
   </div>
@@ -569,6 +652,27 @@
 </nav>
 
 <div class="toast" id="toast"></div>
+
+<!-- ── Time-edit modal ───────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="editModal">
+  <div class="modal-card">
+    <div class="m-title" id="editModalTitle">Edit times</div>
+    <div class="m-sub">Correct your logged time. This change needs your employer's approval before your next duty.</div>
+    <div class="modal-field" id="editInField">
+      <label>In Time</label>
+      <input type="time" id="editInInput" oninput="updateEditPreview()">
+    </div>
+    <div class="modal-field" id="editOutField">
+      <label>Out Time</label>
+      <input type="time" id="editOutInput" oninput="updateEditPreview()">
+    </div>
+    <div class="modal-preview" id="editPreview"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="submit" onclick="submitEdit()">Send for approval</button>
+    </div>
+  </div>
+</div>
 
 <script>
   // ─────────────────────────────────────────────────────────────
@@ -604,6 +708,10 @@
   let _histCache = null;
   // Advance: current month's total advance given (0 = none, shown to driver only if > 0)
   let _advanceCache = 0;
+  // Pending time edit awaiting employer approval — blocks starting a new day's duty.
+  // Seeded from localStorage so the block holds before prefetch confirms with the server.
+  let _editPending = localStorage.getItem('editPendingDate')
+    ? { date: localStorage.getItem('editPendingDate') } : null;
 
   (function init() {
     const params = new URLSearchParams(window.location.search);
@@ -686,7 +794,7 @@
 
     // Duty complete from a previous day → clear and show fresh
     if (punchDate && punchDate !== todayStr() && punchOut) {
-      ['punchDate','punchIn','inLocked','punchOut','outLocked'].forEach(k => localStorage.removeItem(k));
+      ['punchDate','punchIn','inLocked','punchOut','outLocked','inEditUsed','outEditUsed'].forEach(k => localStorage.removeItem(k));
     }
 
     const inT       = localStorage.getItem('punchIn');
@@ -710,20 +818,25 @@
     show('freshState'); hide('onDutyState'); hide('doneState');
     hide('forgotState'); hide('forgotConfirmState');
     setPill('off', 'Off Duty');
+    // If a previous edit is awaiting approval, block starting a new duty
+    const blocked = !!_editPending;
+    document.getElementById('freshPunchWrap').classList.toggle('hidden', blocked);
+    document.getElementById('editBlockWrap').classList.toggle('hidden', !blocked);
+    if (blocked && _editPending.date) {
+      const d = new Date(_editPending.date + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      document.getElementById('editBlockSub').textContent =
+        'Your correction to ' + d + ' has been sent to your employer. You can start today\'s duty once it\'s approved.';
+    }
   }
 
   // ── render: on duty ───────────────────────────────────────────
   function renderOnDuty() {
     const inT       = localStorage.getItem('punchIn');
     const punchDate = localStorage.getItem('punchDate');
-    const inLocked  = localStorage.getItem('inLocked') === '1';
     hide('freshState'); show('onDutyState'); hide('doneState');
     hide('forgotState'); hide('forgotConfirmState');
     setPill('on', 'On Duty');
     document.getElementById('onDutyInTime').textContent = inT;
-    const btn = document.getElementById('editInBtn');
-    btn.disabled    = inLocked;
-    btn.textContent = inLocked ? '✏ Used' : '✏ Edit';
     // Show overnight notice if duty started on a previous date
     const noteEl = document.getElementById('overnightNote');
     if (punchDate && punchDate !== todayStr()) {
@@ -739,7 +852,7 @@
   function renderDone() {
     const inT       = localStorage.getItem('punchIn');
     const outT      = localStorage.getItem('punchOut');
-    const outLocked = localStorage.getItem('outLocked') === '1';
+    const punchDate = localStorage.getItem('punchDate') || todayStr();
     const total     = hoursBetween(inT, outT);
     const { otHours, otPay } = calcOT(total);
     stopLiveTimer();
@@ -753,9 +866,18 @@
     otHrsEl.textContent = otHours > 0 ? fmtHours(otHours) : '—';
     otHrsEl.className   = otHours > 0 ? 'val orange' : 'val muted';
     document.getElementById('doneOTPay').textContent = otPay > 0 ? '₹' + otPay.toLocaleString('en-IN') : '₹0';
-    const btn = document.getElementById('editOutBtn');
-    btn.disabled    = outLocked;
-    btn.textContent = outLocked ? '✏ Used' : '✏ Edit';
+    const pend = _editPending && (_editPending.date === punchDate);
+    document.getElementById('pendingNoteDone').classList.toggle('hidden', !pend);
+    // Each field is editable once; lock the button after its single use
+    setEditBtn('editInBtn',  localStorage.getItem('inEditUsed')  === '1');
+    setEditBtn('editOutBtn', localStorage.getItem('outEditUsed') === '1');
+  }
+
+  function setEditBtn(id, used) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled    = used;
+    btn.textContent = used ? '✏ Edited' : '✏ Edit';
   }
 
   // ── live hours counter ────────────────────────────────────────
@@ -777,23 +899,91 @@
 
   // ── set in-time (first time) ──────────────────────────────────
   function confirmSetInTime() {
+    // Blocked while a previous time edit is still awaiting employer approval
+    if (_editPending) {
+      showToast('Your time edit is awaiting approval', 'error');
+      return;
+    }
     const t = timeNow();
     if (!confirm('Set in-time to ' + t + '?')) return;
     localStorage.setItem('punchDate', todayStr());
     localStorage.setItem('punchIn', t);
+    // Fresh shift → reset the one-time edit allowances
+    localStorage.removeItem('inEditUsed');
+    localStorage.removeItem('outEditUsed');
     renderOnDuty();
     sync('punch_in', { date: todayStr(), inTime: t });
   }
 
-  // ── edit in-time (once only) ──────────────────────────────────
-  function editInTime() {
-    const t         = timeNow();
+  // ── time-edit modal ───────────────────────────────────────────
+  // Edits happen on a COMPLETED duty. Each field can be edited ONCE:
+  //   field 'in'  → correct the in-time    field 'out' → correct the out-time
+  // The correction applies immediately but is flagged pending; the employer must
+  // approve before the next day's duty can start.
+  let _editField = 'out';
+  function openEditModal(field) {
+    _editField = field;
+    const inT  = localStorage.getItem('punchIn')  || '09:00';
+    const outT = localStorage.getItem('punchOut') || '19:00';
+    document.getElementById('editModalTitle').textContent =
+      field === 'in' ? 'Edit in-time' : 'Edit out-time';
+    document.querySelector('#editModal .m-sub').textContent =
+      'Type the correct time. This is a one-time change and needs your employer\'s approval before your next duty.';
+    document.querySelector('#editModal .submit').innerHTML = '<span>📤</span> Send for approval';
+    // Show only the field being edited
+    document.getElementById('editInField').classList.toggle('hidden', field !== 'in');
+    document.getElementById('editOutField').classList.toggle('hidden', field !== 'out');
+    document.getElementById('editInInput').value  = inT;
+    document.getElementById('editOutInput').value = outT;
+    updateEditPreview();
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+  }
+
+  function updateEditPreview() {
+    const prev = document.getElementById('editPreview');
+    const inT  = (_editField === 'in')  ? document.getElementById('editInInput').value  : localStorage.getItem('punchIn');
+    const outT = (_editField === 'out') ? document.getElementById('editOutInput').value : localStorage.getItem('punchOut');
+    if (!inT || !outT) { prev.textContent = ''; return; }
+    const total = hoursBetween(inT, outT);
+    const { otHours, otPay } = calcOT(total);
+    let html = 'New total: ' + fmtHours(total);
+    if (isOvernight(inT, outT)) html = '🌙 ' + html;
+    if (otHours > 0) html += ' · <span class="ot">OT ' + fmtHours(otHours) + ' → ₹' + otPay + '</span>';
+    prev.innerHTML = html;
+  }
+
+  function submitEdit() {
+    // Combine the edited field with the existing (unchanged) one
+    const inT  = (_editField === 'in')  ? document.getElementById('editInInput').value  : localStorage.getItem('punchIn');
+    const outT = (_editField === 'out') ? document.getElementById('editOutInput').value : localStorage.getItem('punchOut');
+    if (!inT || !outT) { showToast('Please set a valid time', 'error'); return; }
+    // Consume this field's one-and-only edit BEFORE re-rendering so the button locks
+    localStorage.setItem(_editField === 'in' ? 'inEditUsed' : 'outEditUsed', '1');
+    requestTimeEdit(inT, outT);
+  }
+
+  // Applies the corrected times locally (immediate, flagged pending) and syncs the
+  // edit request. The employer must approve before the next day's duty can start.
+  function requestTimeEdit(inT, outT) {
     const punchDate = localStorage.getItem('punchDate') || todayStr();
-    if (!confirm('Change in-time to ' + t + '?\n\nYou will not be able to edit again.')) return;
-    localStorage.setItem('punchIn', t);
-    localStorage.setItem('inLocked', '1');
-    renderOnDuty();
-    sync('punch_in', { date: punchDate, inTime: t });
+    const total = hoursBetween(inT, outT);
+    const { otHours, otPay } = calcOT(total);
+    localStorage.setItem('punchIn', inT);
+    localStorage.setItem('punchOut', outT);
+    localStorage.setItem('editPendingDate', punchDate);
+    _editPending = { date: punchDate, reqIn: inT, reqOut: outT };
+    invalidateMTCache();
+    closeEditModal();
+    renderDone();
+    sync('request_edit', {
+      date: punchDate, inTime: inT, outTime: outT,
+      hours: total.toFixed(2), otHours: otHours.toFixed(2), otPay: otPay
+    });
+    showToast('Edit sent for approval', 'success');
   }
 
   // ── set out-time (first time) ─────────────────────────────────
@@ -816,28 +1006,6 @@
     invalidateMTCache();
     renderDone();
     maybeShowMonthlyEarnings();
-    syncPunchOut(t);
-  }
-
-  // ── edit out-time (once only) ─────────────────────────────────
-  function editOutTime() {
-    const t         = timeNow();
-    const inT       = localStorage.getItem('punchIn');
-    const total     = hoursBetween(inT, t);
-    const { otHours, otPay } = calcOT(total);
-    const overnight = isOvernight(inT, t);
-
-    let msg = 'Change out-time to ' + t + '?\nYou will not be able to edit again.';
-    if (overnight) msg += '\n\n🌙 Overnight duty detected.';
-    msg += '\n\nNew total: ' + fmtHours(total);
-    if (otHours > 0) msg += '\nOvertime: ' + fmtHours(otHours) + ' → ₹' + otPay;
-    if (total < 0.5) msg += '\n\n⚠️ Less than 30 minutes — is this correct?';
-
-    if (!confirm(msg)) return;
-    localStorage.setItem('punchOut', t);
-    localStorage.setItem('outLocked', '1');
-    invalidateMTCache();
-    renderDone();
     syncPunchOut(t);
   }
 
@@ -1063,7 +1231,7 @@
       otEl.style.color  = '#94a3b8';
     }
     // Clear yesterday's state — today starts fresh after this
-    ['punchDate','punchIn','inLocked','punchOut','outLocked'].forEach(k => localStorage.removeItem(k));
+    ['punchDate','punchIn','inLocked','punchOut','outLocked','inEditUsed','outEditUsed'].forEach(k => localStorage.removeItem(k));
     invalidateMTCache();
     setPill('done', shortLabel + ' Closed');
     hide('forgotState'); show('forgotConfirmState');
@@ -1073,6 +1241,21 @@
   function startFreshAfterForgot() {
     hide('forgotConfirmState');
     renderFresh();
+  }
+
+  // Reconcile the pending-edit block with the server's truth, then re-render home.
+  // Called after prefetch: if the employer has approved/rejected, the block lifts.
+  function syncPendingEditState(serverEdit) {
+    if (serverEdit && serverEdit.date) {
+      _editPending = serverEdit;
+      localStorage.setItem('editPendingDate', serverEdit.date);
+    } else {
+      _editPending = null;
+      localStorage.removeItem('editPendingDate');
+    }
+    // Only the home page reflects this; safe to re-run even if another tab is open
+    if (!document.getElementById('forgotConfirmState').classList.contains('hidden')) return;
+    restoreState();
   }
 
   // ── tab navigation ────────────────────────────────────────────
@@ -1101,6 +1284,7 @@
         if (data.monthOT)              { _mtCache = data.monthOT; _mtCacheTime = Date.now(); renderDaysOff(); }
         if (data.history)              { _histCache = data.history.months || []; }
         if (data.advance !== undefined){ _advanceCache = data.advance; }
+        syncPendingEditState(data.pendingEdit || null);
       })
       .catch(() => {}); // silent — individual tab fetches are the fallback
   }
@@ -1250,23 +1434,49 @@
     const all = [
       ...serverMonths,
       ...HISTORY_HARDCODED.filter(m => !serverKeys.includes(m.key))
-    ].sort((a, b) => b.key.localeCompare(a.key));
-    let html = '';
+    ].sort((a, b) => b.key.localeCompare(a.key));  // newest month first
+
+    if (all.length === 0) {
+      document.getElementById('histTable').innerHTML =
+        '<div class="info-card accent-sky"><div class="card-title">🏦 Salary History</div>' +
+        '<div class="tab-empty">No approved months yet.</div></div>';
+      return;
+    }
+
+    let rows = '';
     all.forEach(m => {
       const shortLabel = new Date(m.key + '-01T12:00:00')
         .toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+      const advance  = m.advance || 0;
+      const gross    = (m.gross != null) ? m.gross : ((m.fixed || FIXED_SALARY) + (m.otPay || 0));
+      const net      = (m.total != null) ? m.total : (gross - advance);
       const fixedAmt = (m.fixed || FIXED_SALARY).toLocaleString('en-IN');
-      const otAmt    = m.otPay > 0 ? m.otPay.toLocaleString('en-IN') : '—';
-      html += '<div class="tbl-row" style="grid-template-columns:1fr 66px 44px 70px;">' +
-        '<div><div style="font-size:14px;font-weight:700;">' + shortLabel + '</div>' +
-        '<div class="approved-badge">✓ Approved</div></div>' +
-        '<span style="font-size:13px;font-weight:700;color:#475569;text-align:right;">' + fixedAmt + '</span>' +
-        '<span style="font-size:13px;font-weight:700;color:#ea580c;text-align:right;">' + otAmt + '</span>' +
-        '<span style="font-size:14px;font-weight:800;color:#15803d;text-align:right;">' + m.total.toLocaleString('en-IN') + '</span>' +
+
+      let breakdown = 'Fixed ₹' + fixedAmt;
+      if ((m.otPay || 0) > 0) breakdown += ' · OT ₹' + m.otPay.toLocaleString('en-IN');
+      if (advance > 0)        breakdown += ' · Adv −₹' + advance.toLocaleString('en-IN');
+      const daysTxt = (m.days != null && m.days > 0) ? (m.days + (m.days === 1 ? ' day' : ' days')) : '';
+
+      rows +=
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid #f1f5f9;">' +
+          '<div style="min-width:0;">' +
+            '<div style="font-size:14px;font-weight:800;color:#0f172a;">' + shortLabel +
+              (daysTxt ? ' <span style="font-size:11px;font-weight:600;color:#94a3b8;">· ' + daysTxt + '</span>' : '') +
+            '</div>' +
+            '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + breakdown + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0;padding-left:10px;">' +
+            '<div style="font-size:15px;font-weight:800;color:#15803d;">₹' + net.toLocaleString('en-IN') + '</div>' +
+            '<div style="font-size:10px;font-weight:600;color:#94a3b8;">net paid</div>' +
+          '</div>' +
         '</div>';
     });
+
     document.getElementById('histTable').innerHTML =
-      html || '<div class="tab-empty">No approved months yet.</div>';
+      '<div class="info-card accent-sky">' +
+        '<div class="card-title">🏦 Salary History</div>' +
+        rows +
+      '</div>';
   }
 
   // ── Demo view ─────────────────────────────────────────────────
@@ -1376,6 +1586,8 @@
         const n = new Date();
         document.getElementById('empLastRefreshed').textContent =
           'Last refreshed at ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+        renderPendingEdit(data.pendingEdit);
+        renderPendingPrev(data.pendingPrev);
         renderAdvanceSection(data.advances, data.approval.month, label);
         renderMonthApproval(data.approval, label);
         if (onDone) onDone();
@@ -1469,8 +1681,9 @@
   // loadEmployerMTD() removed — data is now in the hero header and KPI strip.
 
   // ── Employer: salary advances ──────────────────────────────────
-  function renderAdvanceSection(advances, month, label) {
-    const section  = document.getElementById('empAdvanceSection');
+  // Builds the advances card HTML for a given month. Input id is unique per
+  // month so multiple advance cards (prior + current) can coexist on screen.
+  function advanceCardHtml(advances, month, label) {
     const entries  = (advances && advances.entries) ? advances.entries : [];
     const total    = (advances && advances.total)   ? advances.total   : 0;
 
@@ -1499,13 +1712,13 @@
         '</div>'
       : '';
 
-    section.innerHTML =
-      '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
+    const inputId = 'advIn-' + month;
+    return '<div class="info-card" style="margin-top:0;border-left:4px solid #dc2626;">' +
         '<div class="card-title">💸 Advances — ' + label + '</div>' +
         listHtml +
         totalRow +
         '<div style="display:flex;gap:8px;margin-top:14px;min-width:0;">' +
-          '<input type="number" id="advanceInput" placeholder="Enter amount (₹)" min="1" ' +
+          '<input type="number" id="' + inputId + '" placeholder="Enter amount (₹)" min="1" ' +
             'style="flex:1;min-width:0;padding:11px 12px;border:2px solid #e2e8f0;border-radius:12px;' +
             'font-size:15px;font-weight:700;color:#0f172a;outline:none;box-sizing:border-box;" ' +
             'onkeydown="if(event.key===\'Enter\')submitAdvance(\'' + month + '\')">' +
@@ -1516,8 +1729,12 @@
       '</div>';
   }
 
+  function renderAdvanceSection(advances, month, label) {
+    document.getElementById('empAdvanceSection').innerHTML = advanceCardHtml(advances, month, label);
+  }
+
   function submitAdvance(month) {
-    const input  = document.getElementById('advanceInput');
+    const input  = document.getElementById('advIn-' + month);
     const amount = parseFloat(input.value);
     if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'error'); return; }
     const date   = todayStr();
@@ -1570,7 +1787,93 @@
   // loadMonthApproval() removed — data is now fetched as part of loadEmployerData() (get_employer_data).
 
   function renderMonthApproval(data, label) {
-    const section  = document.getElementById('empApprovalSection');
+    document.getElementById('empApprovalSection').innerHTML = payoutCardHtml(data, label);
+  }
+
+  // Renders a driver's pending time-edit request at the very top of the employer
+  // view. Shows original vs requested times; Nikhil is blocked from a new day's
+  // duty until this is approved or rejected.
+  function renderPendingEdit(edit) {
+    const section = document.getElementById('empEditSection');
+    if (!edit || !edit.date) { section.innerHTML = ''; return; }
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    const dLabel = new Date(edit.date + 'T12:00:00')
+      .toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    const fmt = t => t ? t : '—';
+    const line = (lbl, inT, outT, strike) =>
+      '<div class="info-row"><span class="lbl">' + lbl + '</span>' +
+      '<span class="val"' + (strike ? ' style="text-decoration:line-through;color:#94a3b8;font-weight:600;"' : '') + '>' +
+        'In ' + fmt(inT) + ' · Out ' + fmt(outT) + '</span></div>';
+
+    let actions = '';
+    if (token) {
+      actions =
+        '<div class="edit-actions">' +
+          '<button class="ea-approve" onclick="resolveEdit(\'approve_edit\',\'' + edit.date + '\')">' +
+            '<span>✓</span> Approve edit</button>' +
+          '<button class="ea-reject" onclick="resolveEdit(\'reject_edit\',\'' + edit.date + '\')">' +
+            '<span>✕</span> Reject</button>' +
+        '</div>';
+    } else {
+      actions = '<div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center;">Add &token=YOUR_TOKEN to URL to enable approval</div>';
+    }
+
+    section.innerHTML =
+      '<div class="info-card" style="margin:0;border-left:4px solid #d97706;background:linear-gradient(135deg,#fffbeb,#fef3c7);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+          '<div class="card-title" style="margin-bottom:0;">✏️ Time Edit Request</div>' +
+          '<span style="font-size:12px;font-weight:700;color:#92400e;">' + dLabel + '</span>' +
+        '</div>' +
+        line('Requested', edit.reqIn, edit.reqOut, false) +
+        line('Was', edit.origIn, edit.origOut, true) +
+        actions +
+      '</div>';
+  }
+
+  function resolveEdit(action, date) {
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    const verb  = action === 'approve_edit' ? 'Approve' : 'Reject';
+    if (!confirm(verb + ' this time edit?')) return;
+    const btns = document.getElementById('empEditSection').querySelectorAll('button');
+    btns.forEach(b => { b.disabled = true; b.textContent = 'Processing…'; b.style.opacity = '0.5'; });
+    const params = new URLSearchParams({ action, date, token });
+    fetch(SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) throw new Error(d && d.error || 'Server error');
+        showToast(verb === 'Approve' ? 'Edit approved' : 'Edit rejected', 'success');
+        loadEmployerData();
+      })
+      .catch(err => { loadEmployerData(); showToast('Could not save: ' + (err && err.message ? err.message : 'Unknown error'), 'error'); });
+  }
+
+  // Renders prior months still awaiting approval, above the current month.
+  // Each gets its own advances card (add/remove enabled) + payout card so the
+  // employer can finalise last month even after the calendar rolls over.
+  function renderPendingPrev(pendingPrev) {
+    const section = document.getElementById('empPendingSection');
+    if (!pendingPrev || pendingPrev.length === 0) { section.innerHTML = ''; return; }
+    let html = '';
+    pendingPrev.forEach(p => {
+      const label = new Date(p.approval.month + '-01T12:00:00')
+        .toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      html +=
+        '<div style="margin-bottom:6px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 6px;">' +
+            '<span style="font-size:11px;font-weight:800;letter-spacing:0.4px;color:#b45309;' +
+              'background:#fef3c7;padding:3px 10px;border-radius:20px;">⏳ AWAITING APPROVAL</span>' +
+            '<span style="font-size:12px;font-weight:700;color:#92400e;">' + label + '</span>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            advanceCardHtml(p.advances, p.approval.month, label) +
+            payoutCardHtml(p.approval, label) +
+          '</div>' +
+        '</div>';
+    });
+    section.innerHTML = html;
+  }
+
+  function payoutCardHtml(data, label) {
     const token    = new URLSearchParams(window.location.search).get('token') || '';
     const approved = data.status === 'Approved';
     const rejected = data.status === 'Rejected';
@@ -1607,8 +1910,7 @@
 
     const gpayHtml = '';
 
-    section.innerHTML =
-      '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
+    return '<div class="info-card accent-amber" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);margin-top:0;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
           '<div class="card-title" style="margin-bottom:0;">💰 ' + label + ' Payout</div>' +
           badge +
