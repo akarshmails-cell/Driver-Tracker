@@ -628,6 +628,7 @@
     <div id="empPendingSection"></div>
     <div id="empAdvanceSection"></div>
     <div id="empApprovalSection"></div>
+    <div id="empHistorySection"></div>
   </div>
   <div style="text-align:center; padding: 10px 16px 16px;">
     <div id="empLastRefreshed" style="font-size:11px; color:#94a3b8; margin-bottom:8px;"></div>
@@ -1429,7 +1430,9 @@
       });
   }
 
-  function renderHistory(serverMonths) {
+  // Shared salary-history card HTML — used by the driver History tab and the
+  // employer page. Merges server months with the hardcoded seed, newest first.
+  function historyHtml(serverMonths) {
     const serverKeys = serverMonths.map(m => m.key);
     const all = [
       ...serverMonths,
@@ -1437,10 +1440,8 @@
     ].sort((a, b) => b.key.localeCompare(a.key));  // newest month first
 
     if (all.length === 0) {
-      document.getElementById('histTable').innerHTML =
-        '<div class="info-card accent-sky"><div class="card-title">🏦 Salary History</div>' +
+      return '<div class="info-card accent-sky"><div class="card-title">🏦 Salary History</div>' +
         '<div class="tab-empty">No approved months yet.</div></div>';
-      return;
     }
 
     let rows = '';
@@ -1472,11 +1473,14 @@
         '</div>';
     });
 
-    document.getElementById('histTable').innerHTML =
-      '<div class="info-card accent-sky">' +
+    return '<div class="info-card accent-sky">' +
         '<div class="card-title">🏦 Salary History</div>' +
         rows +
       '</div>';
+  }
+
+  function renderHistory(serverMonths) {
+    document.getElementById('histTable').innerHTML = historyHtml(serverMonths);
   }
 
   // ── Demo view ─────────────────────────────────────────────────
@@ -1542,6 +1546,7 @@
     document.getElementById('page-employer').classList.add('active');
     startClock();
     refreshEmployerView();
+    loadEmployerHistory();         // salary history — fetched once (rarely changes)
     setEmployerRefreshRate(false); // start slow; first load will set correct rate
     // Pause refreshes when screen is off or user switches apps — resumes on return
     document.addEventListener('visibilitychange', () => {
@@ -1565,6 +1570,21 @@
     loadEmployerData(function() {
       if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.style.opacity = '1'; }
     });
+  }
+
+  // Salary history for the employer page. Fetched once on open (it only changes
+  // when a month is approved/paid); pass force=true to refresh after such actions.
+  function loadEmployerHistory(force) {
+    const sec = document.getElementById('empHistorySection');
+    if (!sec) return;
+    if (!force && sec.getAttribute('data-loaded') === '1') return;
+    fetch(SCRIPT_URL + '?' + new URLSearchParams({ action: 'get_history' }).toString())
+      .then(r => r.json())
+      .then(data => {
+        sec.innerHTML = historyHtml((data && data.months) || []);
+        sec.setAttribute('data-loaded', '1');
+      })
+      .catch(() => {}); // leave prior content; retries on next approve/mark-paid
   }
 
   // Single fetch replaces get_today + get_month_ot + get_month_summary.
@@ -1767,6 +1787,7 @@
       .then(d => {
         if (!d || d.error) throw new Error(d && d.error || 'Server error');
         loadEmployerData();
+        loadEmployerHistory(true); // a paid month now appears in history
       })
       .catch(err => { loadEmployerData(); showToast('Could not save: ' + (err && err.message ? err.message : 'Unknown error'), 'error'); });
   }
@@ -1942,7 +1963,7 @@
     fetch(SCRIPT_URL + '?' + params.toString())
       .then(r => r.json())
       .then(data => {
-        if (data.ok) loadEmployerData();
+        if (data.ok) { loadEmployerData(); loadEmployerHistory(true); } // approved month enters history
         else { loadEmployerData(); showToast(data.error || 'Something went wrong', 'error'); }
       })
       .catch(() => { loadEmployerData(); showToast('Could not connect — please try again', 'error'); });
